@@ -220,3 +220,35 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
   .contact-list div { flex-direction: column; gap: 0; }
   .logo-footer { width: 220px; }
 }
+
+/* 3D case (exploded view). The section is a tall scroll track; the stage sticks while scrolling through it. */
+.case3d { position: relative; height: 420vh; }
+.case3d-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 60%, #1b1712 0%, #000 65%); }
+.case3d-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 0.8s; }
+.case3d--ready .case3d-stage canvas { opacity: 1; }
+.case3d-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; color: var(--muted); font-size: 0.9rem; }
+.case3d-poster { display: none; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.case3d--fallback { height: auto; }
+.case3d--fallback .case3d-stage { position: relative; }
+.case3d--fallback .case3d-poster { display: block; }
+.case3d--fallback canvas, .case3d--fallback .case3d-loading { display: none; }
+.case3d--fallback .cap:first-child { opacity: 1; }
+.case3d--fallback .cap + .cap { display: none; }
+.case3d-captions { position: absolute; inset: 0; pointer-events: none; }
+.cap { position: absolute; left: max(24px, 6vw); top: 50%; transform: translateY(-40%); max-width: 420px;
+  opacity: 0; transition: opacity 0.6s, transform 0.6s; }
+.cap.is-on { opacity: 1; transform: translateY(-50%); }
+.cap h2 { font-size: clamp(1.6rem, 3.4vw, 2.6rem); }
+.cap h2 em { font-family: var(--serif); font-style: normal; font-weight: 500; color: var(--gold); }
+.cap-list ol { display: grid; gap: 18px; }
+.cap-list li { display: flex; gap: 14px; align-items: baseline; font-size: 1.1rem; font-weight: 500; }
+.cap-list li span { font-family: var(--serif); color: var(--gold); font-size: 1.3rem; }
+@media (max-width: 760px) {
+  .cap { left: 16px; right: 84px; top: auto; bottom: 6svh; transform: translateY(12px); max-width: none; }
+  .cap.is-on { transform: none; }
+  .cap h2 { font-size: 1.5rem; }
+  .cap-list ol { gap: 10px; }
+  .cap-list li { font-size: 0.95rem; }
+}
+@media (prefers-reduced-motion: reduce) { .cap { transition: none; } }
