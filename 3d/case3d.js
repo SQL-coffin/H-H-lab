@@ -1,25 +1,22 @@
-// Scroll-driven exploded view of one implant case: working model, gingiva mask, implant bridge.
-// The section is tall; the stage inside it is sticky. Scroll progress (0..1) drives rotation,
-// the explode amount and which caption is shown.
+// Exploded view of one implant case: working model, gingiva mask, implant bridge.
+// Hovering the stage (or tapping it on touch screens) lifts the layers apart like a stack;
+// leaving it puts them back. The case turns slowly on its own and follows the pointer a little.
 import * as THREE from 'three';
 import { GLTFLoader } from './vendor/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from './vendor/jsm/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from './vendor/jsm/environments/RoomEnvironment.js';
 
 const section = document.querySelector('[data-case3d]');
+const stage = section.querySelector('.case3d-stage');
 const canvas = section.querySelector('canvas');
 const loading = section.querySelector('[data-case3d-loading]');
-const captions = [...section.querySelectorAll('[data-from]')];
 
-// How far each layer travels when fully exploded, in mm along the occlusal direction.
-const LIFT = { model: 0, tissue: 9, bridge: 20 };
-
-const clamp01 = (v) => Math.min(1, Math.max(0, v));
-const smooth = (a, b, v) => { const t = clamp01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
-
-function explodeAt(p) {
-  return smooth(0.18, 0.42, p) * (1 - smooth(0.74, 0.94, p));
-}
+// How far each layer travels when fully exploded, in mm along the occlusal direction,
+// and how quickly it follows (the bridge leads, the gingiva follows, like a stack lifting).
+const LIFT = { tissue: 10, bridge: 24 };
+const FOLLOW = { tissue: 0.06, bridge: 0.09 };
+const SPIN_SPEED = 0.12; // radians per second
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function fail() {
   section.classList.add('case3d--fallback');
@@ -86,8 +83,7 @@ if (renderer) {
     // Centre the assembled case on the turntable axis.
     root.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(root);
-    const center = box.getCenter(new THREE.Vector3());
-    root.position.sub(center);
+    root.position.sub(box.getCenter(new THREE.Vector3()));
     radius = box.getSize(new THREE.Vector3()).length() / 2;
     loading.hidden = true;
     section.classList.add('case3d--ready');
@@ -95,14 +91,33 @@ if (renderer) {
     start();
   }).catch(fail);
 
-  let target = 0;
-  let progress = 0;
+  // Interaction state
+  let open = false;
+  const lift = { tissue: 0, bridge: 0 };
+  const pointer = { x: 0, y: 0 };
+  const look = { x: 0, y: 0 };
+  let angle = -0.6;
 
-  function readScroll() {
-    const r = section.getBoundingClientRect();
-    const total = r.height - window.innerHeight;
-    target = clamp01(-r.top / Math.max(1, total));
+  function setOpen(v) {
+    open = v;
+    section.classList.toggle('is-open', open);
+    start();
   }
+
+  stage.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') setOpen(true); });
+  stage.addEventListener('pointerleave', (e) => {
+    if (e.pointerType === 'mouse') setOpen(false);
+    pointer.x = 0;
+    pointer.y = 0;
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    const r = stage.getBoundingClientRect();
+    pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+    pointer.y = ((e.clientY - r.top) / r.height) * 2 - 1;
+  });
+  // Touch screens have no hover: a tap toggles.
+  stage.addEventListener('click', (e) => { if (e.pointerType !== 'mouse') setOpen(!open); });
 
   function resize() {
     const w = canvas.clientWidth;
@@ -115,50 +130,49 @@ if (renderer) {
     camera.updateProjectionMatrix();
   }
 
-  function frame(p) {
-    const e = explodeAt(p);
-    layers.tissue.position.z = LIFT.tissue * e;
-    layers.bridge.position.z = LIFT.bridge * e;
+  function frame(dt) {
+    for (const name of ['tissue', 'bridge']) {
+      lift[name] += ((open ? 1 : 0) - lift[name]) * FOLLOW[name];
+      layers[name].position.z = LIFT[name] * lift[name];
+    }
+    const e = lift.bridge;
 
-    // One full turn over the whole scroll: starts and ends on the same three-quarter view.
-    spin.rotation.y = -0.6 + p * Math.PI * 2;
+    if (!reduceMotion) angle += SPIN_SPEED * dt;
+    look.x += (pointer.x - look.x) * 0.06;
+    look.y += (pointer.y - look.y) * 0.06;
+    spin.rotation.y = angle + look.x * 0.5;
 
-    // Camera rises to look into the intaglio while exploded; pulls back to fit the lifted layers.
-    const elev = THREE.MathUtils.degToRad(18 + 16 * e);
+    // Camera rises to look into the intaglio while exploded and pulls back to fit the lifted layers.
+    const elev = THREE.MathUtils.degToRad(18 + 16 * e - look.y * 10);
     const portrait = camera.aspect < 0.9;
-    const dist = radius * (portrait ? 7.2 : 3.4) * (1 + 0.28 * e);
-    const lookY = (LIFT.bridge * 0.45) * e;
+    const dist = radius * (portrait ? 7.2 : 3.4) * (1 + 0.3 * e);
+    const lookY = LIFT.bridge * 0.45 * e;
     camera.position.set(0, lookY + Math.sin(elev) * dist, Math.cos(elev) * dist);
     camera.lookAt(0, lookY, 0);
-
-    captions.forEach((c) => {
-      const on = p >= +c.dataset.from && p < +c.dataset.to;
-      c.classList.toggle('is-on', on);
-    });
   }
 
   let running = false;
   let visible = false;
-  function tick() {
+  let last = 0;
+  function tick(now) {
     if (!visible) { running = false; return; }
-    progress += (target - progress) * 0.12;
-    if (Math.abs(target - progress) < 0.0005) progress = target;
-    frame(progress);
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    frame(dt);
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
   }
   function start() {
-    if (running || !layers.bridge) return;
+    if (running || !visible || !layers.bridge) return;
     running = true;
+    last = performance.now();
     requestAnimationFrame(tick);
   }
 
   new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
-    if (visible) { readScroll(); start(); }
+    start();
   }).observe(section);
 
-  window.addEventListener('scroll', readScroll, { passive: true });
-  window.addEventListener('resize', () => { resize(); readScroll(); });
-  readScroll();
+  window.addEventListener('resize', resize);
 }
