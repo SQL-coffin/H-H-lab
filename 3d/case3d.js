@@ -145,8 +145,8 @@ if (renderer) {
 
     // Three-quarter view -> front view; camera drops to eye level, zooms in, then backs off to fit the stack.
     const turn = smooth(0.1, 0.62, p);
-    lean.x += (pointer.x - lean.x) * 0.06;
-    lean.y += (pointer.y - lean.y) * 0.06;
+    lean.x += (pointer.x - lean.x) * 0.08;
+    lean.y += (pointer.y - lean.y) * 0.08;
     spin.rotation.y = mix(Math.PI - 0.55, Math.PI, turn) + lean.x * 0.25;
 
     // Distances are fitted to the window so the case never runs into the text:
@@ -213,9 +213,13 @@ if (renderer) {
 
   let running = false;
   let visible = false;
-  function tick() {
+  let last = 0;
+  function tick(now) {
     if (!visible) { running = false; return; }
-    progress += (target - progress) * 0.1;
+    // Ease toward the scroll position at the same speed whatever the frame rate.
+    const dt = Math.min(0.25, (now - last) / 1000);
+    last = now;
+    progress += (target - progress) * (1 - Math.exp(-dt * 7));
     if (Math.abs(target - progress) < 0.0005) progress = target;
     frame(progress);
     renderer.render(scene, camera);
@@ -224,6 +228,7 @@ if (renderer) {
   function start() {
     if (running || !visible || !layers.bridge) return;
     running = true;
+    last = performance.now();
     requestAnimationFrame(tick);
   }
 
