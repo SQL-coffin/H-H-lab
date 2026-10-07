@@ -29,9 +29,9 @@ images/icons/   金色图标
 
 ## 3D 爆炸图
 
-`index.html` 里的 `<!-- 3D case -->` 区块：鼠标移到 3D 画面上，牙桥、牙龈会从模型上一层层升起分开，移开就合回去；手机上是点一下展开、再点一下合起。模型平时会慢慢自己转，也会跟着鼠标稍微转动。
+`index.html` 里的 `<!-- 3D case -->` 区块，互动方式和参考影片一样，是**滚动触发**：往下滚时镜头从斜侧面转到正面，牙桥先升起，牙龈跟着升起，最后背景从右边换成浅色，每一层旁边出现标签。电脑上画面还会跟着鼠标稍微倾斜。
 
 - 模型在 `3d/models/`：`model.glb`（工作模型，已去掉底座和病人名字）、`tissue.glb`（牙龈）、`bridge.glb`（牙桥），由 3Shape 导出的 STL 压缩而成
-- 分开的距离、跟随速度、转速在 `3d/case3d.js` 最上面（`LIFT`、`FOLLOW`、`SPIN_SPEED`），颜色在 `materials`
-- 文字在 `index.html`：`cap-closed` 是合起时的文字，`cap-open` 是展开时的文字
+- 分开的距离、每层升起的时间点在 `3d/case3d.js` 最上面（`LIFT`、`LIFT_WINDOW`），颜色在 `materials`
+- 文字在 `index.html`：`cap-intro` 是开头的文字，`cap-final` 是最后浅色背景上的文字，`layer-label` 是每层的标签（`label-long` 电脑版、`label-short` 手机版）
 - 手机不支持 3D 时会显示 `3d/models/poster.webp` 静态图

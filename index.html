@@ -127,26 +127,28 @@
     </div>
   </section>
 
-  <!-- 3D case: exploded view on hover / tap (3d/case3d.js) -->
+  <!-- 3D case: scroll-driven exploded view, like a stack lifting apart (3d/case3d.js) -->
   <section class="case3d" data-case3d aria-label="3D exploded view of an implant bridge case">
     <div class="case3d-stage">
+      <div class="case3d-wipe" aria-hidden="true"></div>
       <canvas aria-hidden="true"></canvas>
       <p class="case3d-loading" data-case3d-loading>Loading 3D case…</p>
       <img class="case3d-poster" src="3d/models/poster.webp" alt="Implant bridge seated on the gingiva mask and working model" width="896" height="640" loading="lazy">
       <div class="case3d-captions">
-        <div class="cap cap-closed">
+        <div class="cap cap-intro" data-from="0" data-to="0.3">
           <p class="eyebrow">Real lab case</p>
           <h2>From model to <em>seated bridge</em></h2>
-          <p class="cap-hint"><span class="hint-mouse">Hover to take it apart</span><span class="hint-touch">Tap to take it apart</span></p>
+          <p class="cap-hint">Scroll to take it apart</p>
         </div>
-        <div class="cap cap-open cap-list">
-          <ol>
-            <li><span>01</span>4-unit screw-retained implant bridge</li>
-            <li><span>02</span>Removable gingiva mask</li>
-            <li><span>03</span>3D-printed working model</li>
-          </ol>
-          <p class="cap-note">Margin, contact and occlusion checked before delivery</p>
+        <div class="cap cap-final" data-from="0.76" data-to="1.01">
+          <p class="eyebrow">Before delivery</p>
+          <h2>Margin, contact and occlusion <em>checked</em></h2>
         </div>
+      </div>
+      <div class="case3d-labels" aria-hidden="true">
+        <p class="layer-label" data-layer-label="bridge"><span>01</span><b class="label-long">4-unit screw-retained implant bridge</b><b class="label-short">Implant bridge</b></p>
+        <p class="layer-label" data-layer-label="tissue"><span>02</span><b class="label-long">Removable gingiva mask</b><b class="label-short">Gingiva mask</b></p>
+        <p class="layer-label" data-layer-label="model"><span>03</span><b class="label-long">3D-printed working model</b><b class="label-short">Working model</b></p>
       </div>
     </div>
   </section>
