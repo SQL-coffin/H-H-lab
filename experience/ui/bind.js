@@ -21,7 +21,7 @@ export function bindScene(section) {
     for (const { el, x, y } of placed) {
       const left = Math.min(x + 8, size.width - el.offsetWidth - 8);
       el.style.transform = `translate(${left}px, ${y}px) translateY(-50%)`;
-      el.classList.toggle('is-on', show);
+      el.classList.toggle('is-on', !!show);
     }
   }
 
@@ -29,7 +29,7 @@ export function bindScene(section) {
     apply(progress, out = {}, size) {
       section.style.setProperty('--p', progress.toFixed(4));
       for (const [name, value] of Object.entries(out.vars || {})) section.style.setProperty(`--${name}`, value);
-      for (const [name, on] of Object.entries(out.classes || {})) section.classList.toggle(name, on);
+      for (const [name, on] of Object.entries(out.classes || {})) section.classList.toggle(name, !!on);
       for (const el of timed) el.classList.toggle('is-on', progress >= +el.dataset.from && progress < +el.dataset.to);
       if (out.anchors) placeAnchors(out.anchors, out.showAnchors, size);
     },

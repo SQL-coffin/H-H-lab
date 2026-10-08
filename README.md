@@ -49,24 +49,30 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 
 ```html
 <section class="case3d" data-scene="exploded-case">     <!-- 滚动轨道（高度决定滚多久） -->
-  <div class="case3d-stage" data-3d-stage>              <!-- 固定在画面上的舞台，鼠标倾斜看这里 -->
-    <div data-3d-canvas></div>                          <!-- 3D 画布放在这里 -->
-    <p data-3d-loading>Loading…</p>                     <!-- 载入完会自动隐藏 -->
+  <div class="case3d-stage" data-3d-stage>              <!-- 固定在画面上的舞台（要 position: sticky 或 relative），鼠标倾斜看这里 -->
+    <div class="case3d-canvas" data-3d-canvas></div>    <!-- 3D 画布放在这里，会自动铺满舞台 -->
+    <p class="case3d-loading" data-3d-loading>Loading…</p>  <!-- 载入完会自动隐藏 -->
     <div data-from="0" data-to="0.3">…</div>            <!-- 进度在 0–0.3 之间时加上 .is-on -->
     <p data-anchor="bridge">…</p>                       <!-- 跟着场景报告的位置移动（图层标签） -->
   </div>
 </section>
 ```
 
-- section 上会自动标示 `data-state="loading" | "ready" | "fallback"`，CSS 用它来切换显示
-- section 上会有 CSS 变量 `--p`（0–1 的进度），以及场景额外提供的变量（例如 `--wipe`）
+- section 上会自动标示 `data-state="loading" | "ready" | "fallback"`，CSS 用它来切换显示（场景名字写错、缺少画布位置、浏览器不支持 3D 或程序没下载成功，都会变成 `fallback`，并在 Console 显示原因）
+- 场景载入后，section 上会有 CSS 变量 `--p`（0–1 的进度），以及场景额外提供的变量（例如 `--wipe`）
 - 不支持 3D 的浏览器会显示 `assets/models/poster.webp` 静态图和开头的文字
+- 系统设置「减少动态效果」时，3D 会直接跟着滚动走（不滑行）、不跟鼠标倾斜
+- 同一时间只画一个 3D 场景：两个 3D 区块之间要隔至少一个画面高度的其他内容
 
 ### 加一个新场景
 
-1. 在 `experience/scenes/` 新增一个档（照 `exploded-case.js` 的格式：`id`、`setup()` 回传 `scene`、`camera`、`resize()`、`update()`）
+1. 在 `experience/scenes/` 新增一个档，照 `exploded-case.js` 的格式：导出 `{ id, async setup({ engine, el, state }) }`，`setup` 回传：
+   - `scene`、`camera`（Three.js 物件），可选 `exposure`（亮度，默认 1）
+   - `resize(width, height)`：画布大小改变时调用
+   - `update(progress, state, size)`：每一帧调用，移动 3D 物件和镜头，回传 `{ vars, classes, anchors, showAnchors }`（都可以省略）：`vars` 变成 section 上的 CSS 变量，`classes` 是要开关的 class，`anchors` 是 `{ 名字: { x, y } }` 屏幕坐标，给 `data-anchor` 标签用
+   - 模型用 `engine.load('assets/models/xxx.glb')` 载入（每个场景拿到自己的一份，可以共用同一个档）；反光环境用 `engine.environment`
 2. 在 `experience/main.js` 的 `SCENES` 加上它
-3. 在 `index.html` 加一个 `data-scene="新的 id"` 的 section，CSS 写在 `style.css`
+3. 在 `index.html` 加一个 `data-scene="新的 id"` 的 section（结构照上面），CSS 写在 `style.css`
 
 ## 3D 爆炸图（目前的场景）
 

@@ -227,8 +227,9 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
   background: radial-gradient(ellipse at 62% 60%, #1b1712 0%, #000 65%); }
 .case3d-wipe { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 55%, #fbf8f2 0%, #ece5d8 75%);
   clip-path: inset(0 0 0 calc((1 - var(--wipe, 0)) * 100%)); }
-.case3d-canvas { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s; }
-.case3d-canvas canvas { display: block; width: 100%; height: 100%; }
+/* Any scene's canvas slot fills its stage (the engine makes the canvas fill the slot). */
+[data-3d-canvas] { position: absolute; inset: 0; }
+.case3d-canvas { opacity: 0; transition: opacity 0.8s; }
 .case3d[data-state="ready"] .case3d-canvas { opacity: 1; }
 .case3d-loading { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; color: var(--muted); font-size: 0.9rem; }
 .case3d-poster { display: none; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }

@@ -1,10 +1,12 @@
 // Entry point of the immersive experience.
 //
 //   input.js        scroll / mouse / touch  ->  state.js (progress, current scene, pointer)
-//   state.js        read every frame by the engine, the scenes and the content layer
-//   engine/stage.js one WebGL renderer + canvas, model loading, the frame loop
+//   engine/stage.js one WebGL renderer + canvas, model loading, and the frame loop, which each
+//                   frame eases the state, asks the scene for its update and hands the result to
 //   scenes/*.js     one file per 3D scene: builds its Three.js scene and moves it with progress
-//   ui/bind.js      writes progress into the scene's HTML (CSS variables, classes, label positions)
+//   ui/bind.js      the content layer: writes progress into the scene's HTML (CSS variables,
+//                   classes, label positions); it runs inside the frame loop, so only for a
+//                   scene that has loaded
 //
 // A scene is declared in index.html as <section data-scene="id"> with a [data-3d-stage] inside
 // (the sticky frame that reacts to the mouse) and a [data-3d-canvas] slot for the canvas.
@@ -26,11 +28,15 @@ if (sections.length) {
 
   for (const el of sections) {
     const def = SCENES.find((s) => s.id === el.dataset.scene);
-    if (!def) continue;
+    const slot = el.querySelector('[data-3d-canvas]');
     const fallback = () => { el.dataset.state = 'fallback'; };
+    if (!def || !slot) {
+      console.error(def ? `3D scene "${def.id}" has no [data-3d-canvas] slot` : `Unknown 3D scene "${el.dataset.scene}" (add it to SCENES in experience/main.js)`);
+      fallback();
+      continue;
+    }
     if (!engine) { fallback(); continue; }
 
-    const slot = el.querySelector('[data-3d-canvas]');
     el.dataset.state = 'loading';
     engine.prepare(slot);
     input.track(def.id, el, el.querySelector('[data-3d-stage]') || el);

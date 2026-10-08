@@ -1,24 +1,28 @@
-// Experience state: the single source of truth that the input layer writes and the 3D scenes
-// and the content layer read. Plain data, no framework.
+// Experience state: the single source of truth. The input layer writes it, the frame loop eases
+// it, and scenes read it (each scene uses what it needs). Plain data, no framework.
 //
 //   viewport        current window size
 //   page.progress   scroll position over the whole page, 0..1
 //   pointer         mouse position over a scene stage, -1..1 (0 when the mouse is elsewhere),
-//                   plus a smoothed copy for gentle motion
+//                   which scene's stage it is over, and a smoothed copy for gentle motion
 //   scenes[id]      per scene: target (where the scroll is), progress (eased toward target),
 //                   visible (on screen at all)
 //   current         id of the scene that fills most of the viewport, or null
-//   reducedMotion   the visitor asked the system for less motion
+//   reducedMotion   the visitor asked the system for less motion: progress follows the scroll
+//                   without gliding and the pointer lean is off
 
 export function createState() {
-  return {
+  const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const state = {
     viewport: { width: window.innerWidth, height: window.innerHeight },
     page: { progress: 0 },
     pointer: { x: 0, y: 0, smoothX: 0, smoothY: 0, over: null },
     scenes: {},
     current: null,
-    reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    reducedMotion: motionQuery.matches,
   };
+  motionQuery.addEventListener('change', () => { state.reducedMotion = motionQuery.matches; });
+  return state;
 }
 
 export function addScene(state, id) {
@@ -32,6 +36,12 @@ const PROGRESS_RATE = 7;
 const POINTER_RATE = 5;
 
 export function advance(state, dt) {
+  if (state.reducedMotion) {
+    for (const s of Object.values(state.scenes)) s.progress = s.target;
+    state.pointer.smoothX = 0;
+    state.pointer.smoothY = 0;
+    return;
+  }
   const kp = 1 - Math.exp(-dt * PROGRESS_RATE);
   for (const s of Object.values(state.scenes)) {
     s.progress += (s.target - s.progress) * kp;
