@@ -58,6 +58,35 @@ export function createInput(state, onChange) {
         state.pointer.over = null;
       });
 
+      // Scenes that can be turned by hand mark their stage with data-3d-drag. Dragging (mouse or
+      // finger) adds to scene.drag, in stage widths / heights; vertical page scrolling on touch
+      // screens keeps working because the stage only claims horizontal pans (touch-action: pan-y).
+      if (stage.hasAttribute('data-3d-drag')) {
+        let from = null;
+        stage.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0 || e.target.closest('button, a')) return;
+          from = { x: e.clientX, y: e.clientY, id: e.pointerId };
+          stage.setPointerCapture(e.pointerId);
+          stage.classList.add('is-dragging');
+        });
+        stage.addEventListener('pointermove', (e) => {
+          if (!from || e.pointerId !== from.id) return;
+          const r = stage.getBoundingClientRect();
+          scene.drag.x += (e.clientX - from.x) / r.width;
+          scene.drag.y = Math.max(-0.5, Math.min(0.5, scene.drag.y + (e.clientY - from.y) / r.height));
+          from.x = e.clientX;
+          from.y = e.clientY;
+          onChange();
+        });
+        const end = (e) => {
+          if (!from || e.pointerId !== from.id) return;
+          from = null;
+          stage.classList.remove('is-dragging');
+        };
+        stage.addEventListener('pointerup', end);
+        stage.addEventListener('pointercancel', end);
+      }
+
       measure();
       return scene;
     },

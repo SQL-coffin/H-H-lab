@@ -6,7 +6,9 @@
 //   pointer         mouse position over a scene stage, -1..1 (0 when the mouse is elsewhere),
 //                   which scene's stage it is over, and a smoothed copy for gentle motion
 //   scenes[id]      per scene: target (where the scroll is), progress (eased toward target),
-//                   visible (on screen at all)
+//                   visible (on screen at all), pose (the pose picked with the scene's pose
+//                   buttons, or null) and drag (how far the visitor has turned it by dragging)
+//   dt              seconds since the previous frame, for scenes that ease things themselves
 //   current         id of the scene that fills most of the viewport, or null
 //   reducedMotion   the visitor asked the system for less motion: progress follows the scroll
 //                   without gliding and the pointer lean is off
@@ -20,13 +22,14 @@ export function createState() {
     scenes: {},
     current: null,
     reducedMotion: motionQuery.matches,
+    dt: 0,
   };
   motionQuery.addEventListener('change', () => { state.reducedMotion = motionQuery.matches; });
   return state;
 }
 
 export function addScene(state, id) {
-  state.scenes[id] = { id, target: 0, progress: 0, visible: false };
+  state.scenes[id] = { id, target: 0, progress: 0, visible: false, pose: null, drag: { x: 0, y: 0 } };
   return state.scenes[id];
 }
 
@@ -36,6 +39,7 @@ const PROGRESS_RATE = 7;
 const POINTER_RATE = 5;
 
 export function advance(state, dt) {
+  state.dt = dt;
   if (state.reducedMotion) {
     for (const s of Object.values(state.scenes)) s.progress = s.target;
     state.pointer.smoothX = 0;

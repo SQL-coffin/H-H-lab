@@ -3,12 +3,7 @@
 // front, the bridge and then the gingiva mask lift off the model, a light panel wipes in and each
 // layer gets a label (the labels and captions themselves live in index.html).
 import * as THREE from 'three';
-
-const MODELS = {
-  model: 'assets/models/model.glb',
-  tissue: 'assets/models/tissue.glb',
-  bridge: 'assets/models/bridge.glb',
-};
+import { buildCase, MODELS } from './lib/implant-case.js';
 
 // How far each layer lifts when fully exploded, in mm along the occlusal direction,
 // and the scroll window (0..1) in which it lifts: the bridge goes first, the mask follows.
@@ -26,62 +21,8 @@ export default {
   id: 'exploded-case',
 
   async setup({ engine }) {
-    const scene = new THREE.Scene();
-    scene.environment = engine.environment;
-    scene.environmentIntensity = 0.55;
-
+    const { scene, spin, layers, layerBoxes, radius } = await buildCase(engine);
     const camera = new THREE.PerspectiveCamera(28, 1, 1, 2000);
-
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
-    key.position.set(60, 120, 90);
-    const rim = new THREE.DirectionalLight(0xe0ad5a, 2.6);
-    rim.position.set(-90, 40, -120);
-    const fill = new THREE.HemisphereLight(0xfff4e6, 0x101010, 0.6);
-    scene.add(key, rim, fill);
-
-    const materials = {
-      model: new THREE.MeshStandardMaterial({ color: 0x7d8691, roughness: 0.85, metalness: 0 }),
-      tissue: new THREE.MeshPhysicalMaterial({ color: 0xc9707a, roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.4 }),
-      bridge: new THREE.MeshPhysicalMaterial({ color: 0xe9dcc6, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.12, sheen: 0.4, sheenColor: new THREE.Color(0xfff6e8) }),
-    };
-
-    // spin (turntable) > root (model frame: +z is occlusal, turned so it points up) > layers.
-    // With spin = PI the labial side of the bridge faces the camera.
-    const spin = new THREE.Group();
-    const root = new THREE.Group();
-    root.rotation.x = -Math.PI / 2;
-    spin.add(root);
-    scene.add(spin);
-
-    const layers = {};
-    await Promise.all(Object.entries(MODELS).map(async ([name, path]) => {
-      const gltf = await engine.load(path);
-      gltf.scene.traverse((o) => {
-        if (o.isMesh) {
-          o.material = materials[name];
-          if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();
-        }
-      });
-      const layer = new THREE.Group();
-      layer.add(gltf.scene);
-      layers[name] = layer;
-    }));
-    // Add in a fixed order so drawing order does not depend on which file arrived first.
-    for (const name of Object.keys(MODELS)) root.add(layers[name]);
-
-    // Centre the assembled case on the turntable axis.
-    root.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(root);
-    root.position.sub(box.getCenter(new THREE.Vector3()));
-    const radius = box.getSize(new THREE.Vector3()).length() / 2;
-
-    // Label anchors: each layer's bounding box in its own space (the layers only translate).
-    root.updateMatrixWorld(true);
-    const layerBoxes = {};
-    for (const name of Object.keys(MODELS)) {
-      const b = new THREE.Box3().setFromObject(layers[name]);
-      layerBoxes[name] = new THREE.Box3(layers[name].worldToLocal(b.min.clone()), layers[name].worldToLocal(b.max.clone()));
-    }
 
     const tmp = new THREE.Vector3();
     const toScreen = (v, size) => ({ x: ((v.x + 1) / 2) * size.width, y: ((1 - v.y) / 2) * size.height });
