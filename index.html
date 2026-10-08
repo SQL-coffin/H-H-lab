@@ -15,14 +15,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">{ "imports": { "three": "./experience/vendor/three.module.min.js" } }</script>
-  <!-- Fetch the deeper modules in parallel with main.js instead of one level at a time. -->
+  <!-- Start the biggest deep modules early; the hero image keeps priority (fetchpriority="high"). -->
   <link rel="modulepreload" href="experience/vendor/three.module.min.js">
-  <link rel="modulepreload" href="experience/engine/stage.js">
-  <link rel="modulepreload" href="experience/scenes/exploded-case.js">
   <link rel="modulepreload" href="experience/vendor/jsm/loaders/GLTFLoader.js">
-  <link rel="modulepreload" href="experience/vendor/jsm/utils/BufferGeometryUtils.js">
-  <link rel="modulepreload" href="experience/vendor/jsm/libs/meshopt_decoder.module.js">
-  <link rel="modulepreload" href="experience/vendor/jsm/environments/RoomEnvironment.js">
   <script type="module" src="experience/main.js"></script>
   <!-- Module scripts run (or fail) before DOMContentLoaded. A scene still without a data-state by
        then means the 3D code never ran (old browser, failed download), so show its still image. -->
@@ -78,7 +73,7 @@
       </ul>
       <p class="hero-materials">Zirconia <i>•</i> E.max <i>•</i> Veneers <i>•</i> Implant Crowns</p>
     </div>
-    <img class="hero-img" src="images/hero-smile.webp" alt="Anterior crowns with natural shade and surface texture" width="986" height="821">
+    <img fetchpriority="high" class="hero-img" src="images/hero-smile.webp" alt="Anterior crowns with natural shade and surface texture" width="986" height="821">
   </section>
 
   <div class="wrap actions actions-center">

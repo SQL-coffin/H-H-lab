@@ -70,7 +70,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
    - `scene`、`camera`（Three.js 物件），可选 `exposure`（亮度，默认 1）
    - `resize(width, height)`：画布大小改变时调用
    - `update(progress, state, size)`：每一帧调用，移动 3D 物件和镜头，回传 `{ vars, classes, anchors, showAnchors }`（都可以省略）：`vars` 变成 section 上的 CSS 变量，`classes` 是要开关的 class，`anchors` 是 `{ 名字: { x, y } }` 屏幕坐标，给 `data-anchor` 标签用
-   - 模型用 `engine.load('assets/models/xxx.glb')` 载入（每个场景拿到自己的一份，可以共用同一个档）；反光环境用 `engine.environment`
+   - 模型用 `engine.load('assets/models/xxx.glb')` 载入（每个场景拿到自己的一份物件，可以共用同一个档；但几何和原本的材质是共用的，所以要换上自己的材质，不要直接修改载入的材质）；反光环境用 `engine.environment`
 2. 在 `experience/main.js` 的 `SCENES` 加上它
 3. 在 `index.html` 加一个 `data-scene="新的 id"` 的 section（结构照上面），CSS 写在 `style.css`
 

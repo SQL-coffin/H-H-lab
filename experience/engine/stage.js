@@ -36,9 +36,16 @@ export function createEngine(state) {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const makeEnvironment = () => pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   let environment = makeEnvironment();
+  // Environments from a lost context; a scene still holding one (including a scene that was
+  // loading during the loss and is added later) is switched to the current one.
+  const stale = new WeakSet();
+  const refreshEnvironment = (entry) => {
+    if (stale.has(entry.instance.scene.environment)) entry.instance.scene.environment = environment;
+  };
   canvas.addEventListener('webglcontextrestored', () => {
+    stale.add(environment);
     environment = makeEnvironment();
-    for (const e of entries) e.instance.scene.environment = environment;
+    for (const e of entries) refreshEnvironment(e);
   });
 
   // Models are downloaded and parsed once per URL (relative to the page, meshopt-compressed GLB).
@@ -142,6 +149,7 @@ export function createEngine(state) {
 
     // instance: { scene, camera, exposure?, resize(w, h), update(progress, state, size) -> output }
     add(entry) {
+      refreshEnvironment(entry);
       entries.push(entry);
       if (entry.slot === mounted) entry.instance.resize(size.width, size.height);
       this.wake();
