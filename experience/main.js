@@ -14,10 +14,11 @@
 import { createState } from './state.js';
 import { createInput } from './input.js';
 import { createEngine } from './engine/stage.js';
-import { bindScene } from './ui/bind.js';
+import { bindScene, bindPoseControls } from './ui/bind.js';
 import explodedCase from './scenes/exploded-case.js';
+import caseViewer from './scenes/case-viewer.js';
 
-const SCENES = [explodedCase];
+const SCENES = [explodedCase, caseViewer];
 
 const sections = [...document.querySelectorAll('[data-scene]')];
 
@@ -39,7 +40,13 @@ if (sections.length) {
 
     el.dataset.state = 'loading';
     engine.prepare(slot);
-    input.track(def.id, el, el.querySelector('[data-3d-stage]') || el);
+    const scene = input.track(def.id, el, el.querySelector('[data-3d-stage]') || el);
+    bindPoseControls(el, (pose) => {
+      scene.pose = pose;
+      scene.drag.x = 0;
+      scene.drag.y = 0;
+      engine.wake();
+    });
 
     def.setup({ engine, el, state }).then((instance) => {
       const loading = el.querySelector('[data-3d-loading]');

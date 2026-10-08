@@ -63,6 +63,8 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 - 不支持 3D 的浏览器会显示 `assets/models/poster.webp` 静态图和开头的文字
 - 系统设置「减少动态效果」时，3D 会直接跟着滚动走（不滑行）、不跟鼠标倾斜
 - 同一时间只画一个 3D 场景：两个 3D 区块之间要隔至少一个画面高度的其他内容
+- 舞台加上 `data-3d-drag`：访客可以用鼠标或手指拖动转动模型（手机上下滑仍然是滚动页面），拖动量在 `state.scenes[id].drag`
+- 区块里的 `<button data-pose="名字">`：点了就切换场景的姿态（`state.scenes[id].pose`），对应的 `[data-pose-caption="名字"]` 文字会显示
 
 ### 加一个新场景
 
@@ -81,3 +83,14 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 - 程序在 `experience/scenes/exploded-case.js`：分开的距离、每层升起的时间点在最上面（`LIFT`、`LIFT_WINDOW`），颜色在 `materials`
 - 模型在 `assets/models/`：`model.glb`（工作模型，已去掉底座和病人名字）、`tissue.glb`（牙龈）、`bridge.glb`（牙桥），由 3Shape 导出的 STL 压缩而成
 - 文字在 `index.html`：`cap-intro` 是开头的文字，`cap-final` 是最后浅色背景上的文字，`data-anchor` 是每层的标签（`label-long` 电脑版、`label-short` 手机版）
+
+## 3D 查看器「Take a closer look」
+
+`index.html` 里的 `<!-- 3D viewer -->` 区块，仿照 Apple 产品页的 Product Viewer：左边四个按钮切换姿态，模型会平滑过渡过去；也可以直接拖动转动。
+
+- **Seated**：牙桥装在模型上
+- **Layers**：三层分开
+- **Fitting surface**：牙桥翻过来，看螺丝通道和种植体接口（模型和牙龈淡出）
+- **Close-up**：牙桥和牙龈交界的特写
+
+程序在 `experience/scenes/case-viewer.js`，每个姿态是最上面 `POSES` 里的一组数字（分开程度、翻转、淡出、对焦、角度），改数字就能调整画面。要加姿态：在 `POSES` 加一组，再在 `index.html` 加一个按钮和一段说明。两个场景共用的模型和材质在 `experience/scenes/lib/implant-case.js`。

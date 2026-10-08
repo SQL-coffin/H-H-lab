@@ -278,3 +278,50 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
   .layer-label span { font-size: 0.9rem; }
 }
 @media (prefers-reduced-motion: reduce) { .cap, .layer-label { transition: none; } }
+
+/* 3D viewer (pose buttons + drag). A normal-height block, not a scroll track. */
+.viewer3d-stage { position: relative; height: 86vh; height: 86svh; min-height: 560px; max-height: 900px; overflow: hidden;
+  background: radial-gradient(ellipse at 62% 55%, #1b1712 0%, #000 68%); cursor: grab; touch-action: pan-y; user-select: none; }
+.viewer3d-stage.is-dragging { cursor: grabbing; }
+.viewer3d-canvas { opacity: 0; transition: opacity 0.8s; }
+.viewer3d[data-state="ready"] .viewer3d-canvas { opacity: 1; }
+.viewer3d-ui { position: absolute; left: max(24px, 6vw); top: 50%; transform: translateY(-50%); width: min(380px, 34vw);
+  display: grid; gap: 28px; pointer-events: none; }
+.viewer3d-ui > * { pointer-events: auto; }
+.viewer3d-head h2 { font-size: clamp(1.8rem, 3.2vw, 2.6rem); }
+.viewer3d-hint { margin: 12px 0 0; color: var(--muted); font-size: 0.9rem; }
+.viewer3d-hint::before { content: "↔"; color: var(--gold); margin-right: 8px; }
+.viewer3d-poses { display: grid; gap: 8px; justify-items: start; }
+.viewer3d-poses button { display: inline-flex; align-items: center; gap: 10px; padding: 9px 18px 9px 10px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.06); color: var(--white);
+  font: 500 0.95rem var(--sans); cursor: pointer; transition: background 0.25s, border-color 0.25s, color 0.25s; }
+.viewer3d-poses button span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid currentColor; font-size: 0.9rem; line-height: 1; transition: transform 0.3s; }
+.viewer3d-poses button:hover { border-color: var(--gold); }
+.viewer3d-poses button[aria-pressed="true"] { background: var(--white); border-color: var(--white); color: var(--black); }
+.viewer3d-poses button[aria-pressed="true"] span { transform: rotate(45deg); }
+.viewer3d-poses button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.viewer3d-captions { position: relative; min-height: 4.8em; }
+.viewer3d-captions p { position: absolute; inset: 0 0 auto 0; margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.55;
+  opacity: 0; transform: translateY(6px); transition: opacity 0.4s, transform 0.4s; }
+.viewer3d-captions p b { color: var(--white); font-weight: 600; }
+.viewer3d-captions p.is-on { opacity: 1; transform: none; }
+.viewer3d[data-state="fallback"] .viewer3d-stage { cursor: default; }
+.viewer3d[data-state="fallback"] .case3d-poster { display: block; left: 40%; width: 54%; }
+.viewer3d[data-state="fallback"] .viewer3d-canvas, .viewer3d[data-state="fallback"] .case3d-loading,
+.viewer3d[data-state="fallback"] .viewer3d-hint, .viewer3d[data-state="fallback"] .viewer3d-poses,
+.viewer3d[data-state="fallback"] .viewer3d-captions { display: none; }
+
+@media (max-width: 760px) {
+  .viewer3d-stage { height: 92svh; min-height: 620px; }
+  .viewer3d-ui { inset: 0; transform: none; width: auto; padding: 28px 16px 24px; grid-template-rows: auto 1fr auto auto; gap: 14px; }
+  .viewer3d-head { grid-row: 1; }
+  .viewer3d-head h2 { font-size: 1.6rem; }
+  .viewer3d-poses { grid-row: 3; display: flex; flex-wrap: wrap; gap: 8px; }
+  .viewer3d-poses button { padding: 7px 14px 7px 8px; font-size: 0.85rem; }
+  .viewer3d-poses button span { width: 18px; height: 18px; font-size: 0.8rem; }
+  .viewer3d-captions { grid-row: 4; min-height: 4.6em; margin-right: 68px; }
+  .viewer3d-captions p { font-size: 0.85rem; }
+  .viewer3d[data-state="fallback"] .case3d-poster { left: 6%; width: 88%; top: 18%; height: 44%; }
+}
+@media (prefers-reduced-motion: reduce) { .viewer3d-poses button, .viewer3d-captions p { transition: none; } }

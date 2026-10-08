@@ -35,3 +35,21 @@ export function bindScene(section) {
     },
   };
 }
+
+// Pose buttons: [data-pose="name"] buttons in a section pick the pose of its scene; the matching
+// [data-pose-caption="name"] gets .is-on. Works before the 3D has loaded, so the captions read
+// correctly from the start. onSelect(name) is called with the chosen pose.
+export function bindPoseControls(section, onSelect) {
+  const buttons = [...section.querySelectorAll('[data-pose]')];
+  const captions = [...section.querySelectorAll('[data-pose-caption]')];
+  if (!buttons.length) return;
+
+  function select(name) {
+    for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.pose === name));
+    for (const c of captions) c.classList.toggle('is-on', c.dataset.poseCaption === name);
+    onSelect(name);
+  }
+  for (const b of buttons) b.addEventListener('click', () => select(b.dataset.pose));
+  const initial = buttons.find((b) => b.getAttribute('aria-pressed') === 'true') || buttons[0];
+  select(initial.dataset.pose);
+}

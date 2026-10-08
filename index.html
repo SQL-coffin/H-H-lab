@@ -195,6 +195,34 @@
     </div>
   </section>
 
+  <!-- 3D viewer: pose buttons + drag to turn (scene: experience/scenes/case-viewer.js) -->
+  <section class="viewer3d" data-scene="case-viewer" aria-label="Interactive 3D view of an implant bridge case">
+    <div class="viewer3d-stage" data-3d-stage data-3d-drag>
+      <div class="viewer3d-canvas" data-3d-canvas></div>
+      <p class="case3d-loading" data-3d-loading>Loading 3D case…</p>
+      <img class="case3d-poster" src="assets/models/poster.webp" alt="Implant bridge seated on the gingiva mask and working model" width="747" height="582" loading="lazy">
+      <div class="viewer3d-ui">
+        <div class="viewer3d-head">
+          <p class="eyebrow">Real lab case</p>
+          <h2>Take a closer look.</h2>
+          <p class="viewer3d-hint">Drag to turn it</p>
+        </div>
+        <div class="viewer3d-poses" role="group" aria-label="Choose a view">
+          <button type="button" data-pose="seated" aria-pressed="true"><span aria-hidden="true">+</span>Seated</button>
+          <button type="button" data-pose="layers"><span aria-hidden="true">+</span>Layers</button>
+          <button type="button" data-pose="intaglio"><span aria-hidden="true">+</span>Fitting surface</button>
+          <button type="button" data-pose="closeup"><span aria-hidden="true">+</span>Close-up</button>
+        </div>
+        <div class="viewer3d-captions" aria-live="polite">
+          <p data-pose-caption="seated"><b>Seated on the model.</b> A 4-unit screw-retained implant bridge on its gingiva mask and 3D-printed working model.</p>
+          <p data-pose-caption="layers"><b>Every layer, separated.</b> Bridge, removable gingiva mask and working model, made to fit each other.</p>
+          <p data-pose-caption="intaglio"><b>The fitting surface.</b> Screw channels and implant interfaces, the side that meets the implants.</p>
+          <p data-pose-caption="closeup"><b>Emergence and margins.</b> Where the bridge leaves the gingiva, checked before delivery.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Before / after -->
   <section id="cases" class="section">
     <div class="wrap center">
