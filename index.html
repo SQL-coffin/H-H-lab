@@ -14,8 +14,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <script type="importmap">{ "imports": { "three": "./3d/vendor/three.module.min.js" } }</script>
-  <script type="module" src="3d/case3d.js"></script>
+  <script type="importmap">{ "imports": { "three": "./experience/vendor/three.module.min.js" } }</script>
+  <script type="module" src="experience/main.js"></script>
 </head>
 <body>
 
@@ -127,13 +127,13 @@
     </div>
   </section>
 
-  <!-- 3D case: scroll-driven exploded view, like a stack lifting apart (3d/case3d.js) -->
-  <section class="case3d" data-case3d aria-label="3D exploded view of an implant bridge case">
-    <div class="case3d-stage">
+  <!-- 3D case: scroll-driven exploded view, like a stack lifting apart (scene: experience/scenes/exploded-case.js) -->
+  <section class="case3d" data-scene="exploded-case" aria-label="3D exploded view of an implant bridge case">
+    <div class="case3d-stage" data-3d-stage>
       <div class="case3d-wipe" aria-hidden="true"></div>
-      <canvas aria-hidden="true"></canvas>
-      <p class="case3d-loading" data-case3d-loading>Loading 3D case…</p>
-      <img class="case3d-poster" src="3d/models/poster.webp" alt="Implant bridge seated on the gingiva mask and working model" width="896" height="640" loading="lazy">
+      <div class="case3d-canvas" data-3d-canvas></div>
+      <p class="case3d-loading" data-3d-loading>Loading 3D case…</p>
+      <img class="case3d-poster" src="assets/models/poster.webp" alt="Implant bridge seated on the gingiva mask and working model" width="747" height="582" loading="lazy">
       <div class="case3d-captions">
         <div class="cap cap-intro" data-from="0" data-to="0.3">
           <p class="eyebrow">Real lab case</p>
@@ -146,9 +146,9 @@
         </div>
       </div>
       <div class="case3d-labels" aria-hidden="true">
-        <p class="layer-label" data-layer-label="bridge"><span>01</span><b class="label-long">4-unit screw-retained implant bridge</b><b class="label-short">Implant bridge</b></p>
-        <p class="layer-label" data-layer-label="tissue"><span>02</span><b class="label-long">Removable gingiva mask</b><b class="label-short">Gingiva mask</b></p>
-        <p class="layer-label" data-layer-label="model"><span>03</span><b class="label-long">3D-printed working model</b><b class="label-short">Working model</b></p>
+        <p class="layer-label" data-anchor="bridge"><span>01</span><b class="label-long">4-unit screw-retained implant bridge</b><b class="label-short">Implant bridge</b></p>
+        <p class="layer-label" data-anchor="tissue"><span>02</span><b class="label-long">Removable gingiva mask</b><b class="label-short">Gingiva mask</b></p>
+        <p class="layer-label" data-anchor="model"><span>03</span><b class="label-long">3D-printed working model</b><b class="label-short">Working model</b></p>
       </div>
     </div>
   </section>
