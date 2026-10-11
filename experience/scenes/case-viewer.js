@@ -32,10 +32,8 @@ export default {
     const camera = new THREE.PerspectiveCamera(28, 1, 1, 2000);
 
     // Turn the bridge about its own centre: move its contents so the layer's origin is the centre.
-    // (The rotation into the model frame can swap min and max, so rebuild the box from its corners.)
-    const bridgeBox = new THREE.Box3().setFromPoints([layerBoxes.bridge.min, layerBoxes.bridge.max]);
-    const bridgeCenter = bridgeBox.getCenter(new THREE.Vector3());
-    const bridgeRadius = bridgeBox.getSize(new THREE.Vector3()).length() / 2;
+    const bridgeCenter = layerBoxes.bridge.getCenter(new THREE.Vector3());
+    const bridgeRadius = layerBoxes.bridge.getSize(new THREE.Vector3()).length() / 2;
     layers.bridge.children[0].position.sub(bridgeCenter);
 
     for (const name of ['model', 'tissue']) materials[name].transparent = true;

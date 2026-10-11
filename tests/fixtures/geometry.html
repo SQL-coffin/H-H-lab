@@ -1,0 +1,51 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Geometry fixture</title>
+<!-- Model paths resolve against the page, like on the site root. -->
+<base href="/">
+<!-- Builds the implant case with the real engine and reports its geometry for tests/geometry.test.mjs. -->
+<script type="importmap">{ "imports": { "three": "/experience/vendor/three.module.min.js" } }</script>
+<script type="module">
+  import * as THREE from 'three';
+  import { createState } from '/experience/state.js';
+  import { createEngine } from '/experience/engine/stage.js';
+  import { buildCase, boxInOwnSpace } from '/experience/scenes/lib/implant-case.js';
+
+  const v = (x) => x.toArray();
+  try {
+    const engine = createEngine(createState());
+    const built = await buildCase(engine);
+    const layers = {};
+    for (const [name, box] of Object.entries(built.layerBoxes)) {
+      // Reference: the box of every vertex, transformed into the layer's own space one by one.
+      const toLayer = built.layers[name].matrixWorld.clone().invert();
+      const exact = new THREE.Box3();
+      const p = new THREE.Vector3();
+      let vertices = 0;
+      built.layers[name].traverse((o) => {
+        if (!o.isMesh) return;
+        const pos = o.geometry.attributes.position;
+        const m = new THREE.Matrix4().multiplyMatrices(toLayer, o.matrixWorld);
+        for (let i = 0; i < pos.count; i++) exact.expandByPoint(p.fromBufferAttribute(pos, i).applyMatrix4(m));
+        vertices += pos.count;
+      });
+      layers[name] = {
+        min: v(box.min), max: v(box.max), empty: box.isEmpty(),
+        center: v(box.getCenter(new THREE.Vector3())), size: v(box.getSize(new THREE.Vector3())),
+        exactMin: v(exact.min), exactMax: v(exact.max), vertices,
+      };
+    }
+    // A box under a rotated parent: the case that used to swap min and max.
+    const parent = new THREE.Group();
+    parent.rotation.set(-Math.PI / 2, 0.3, 0.7);
+    const child = new THREE.Group();
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 6));
+    mesh.position.set(1, 2, 3);
+    mesh.rotation.y = 0.4;
+    child.add(mesh); parent.add(child);
+    const rotated = boxInOwnSpace(child);
+    window.__geometry = { ok: true, layers, radius: built.radius, rotated: { min: v(rotated.min), max: v(rotated.max), empty: rotated.isEmpty() } };
+  } catch (e) {
+    window.__geometry = { ok: false, error: String(e && e.stack || e) };
+  }
+</script>

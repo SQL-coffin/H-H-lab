@@ -11,7 +11,8 @@ export const MODELS = {
 // Builds a Three.js scene holding the case. Returns:
 //   scene, spin     spin is the turntable (rotate on y); spin = PI puts the labial side toward +z
 //   layers[name]    one group per layer; move it on z to lift it along the occlusal direction
-//   layerBoxes      each layer's bounding box in its own space (the layers only translate)
+//   layerBoxes      each layer's bounding box in its own space (the layers only translate),
+//                   so min <= max on every axis
 //   radius          radius of the assembled case's bounding sphere, in mm
 //   materials       the materials in use, so a scene can fade them
 export async function buildCase(engine) {
@@ -63,10 +64,24 @@ export async function buildCase(engine) {
 
   root.updateMatrixWorld(true);
   const layerBoxes = {};
-  for (const name of Object.keys(MODELS)) {
-    const b = new THREE.Box3().setFromObject(layers[name]);
-    layerBoxes[name] = new THREE.Box3(layers[name].worldToLocal(b.min.clone()), layers[name].worldToLocal(b.max.clone()));
-  }
+  for (const name of Object.keys(MODELS)) layerBoxes[name] = boxInOwnSpace(layers[name]);
 
   return { scene, spin, root, layers, layerBoxes, radius, materials };
+}
+
+// Bounding box of everything inside `object`, in object's own coordinate space. Each mesh's
+// geometry box is mapped through the full transform from the mesh to `object`, all 8 corners,
+// so a rotation anywhere in between cannot swap min and max. (Converting a world-space box's
+// two corners back to local space would, because of the root's rotation.)
+export function boxInOwnSpace(object) {
+  object.updateMatrixWorld(true);
+  const toObject = object.matrixWorld.clone().invert();
+  const m = new THREE.Matrix4();
+  const box = new THREE.Box3();
+  object.traverse((o) => {
+    if (!o.isMesh) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    box.union(o.geometry.boundingBox.clone().applyMatrix4(m.multiplyMatrices(toObject, o.matrixWorld)));
+  });
+  return box;
 }

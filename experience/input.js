@@ -39,8 +39,9 @@ export function createInput(state, onChange) {
       const scene = addScene(state, id);
       tracked.push({ id, el });
 
-      new IntersectionObserver(([entry]) => {
-        scene.visible = entry.isIntersecting;
+      // Fast scrolling can queue several changes for the same section; the last one is current.
+      new IntersectionObserver((entries) => {
+        scene.visible = entries[entries.length - 1].isIntersecting;
         measure();
       }).observe(el);
 

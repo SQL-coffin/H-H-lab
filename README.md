@@ -94,3 +94,25 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 - **Close-up**：牙桥和牙龈交界的特写
 
 程序在 `experience/scenes/case-viewer.js`，每个姿态是最上面 `POSES` 里的一组数字（分开程度、翻转、淡出、对焦、角度），改数字就能调整画面。要加姿态：在 `POSES` 加一组，再在 `index.html` 加一个按钮和一段说明。两个场景共用的模型和材质在 `experience/scenes/lib/implant-case.js`。
+
+## 自动测试
+
+`tests/` 里是一套小型浏览器测试（Node 自带的测试工具 + Playwright 无头 Chrome，用软件 WebGL，不需要显卡）。每次开 PR 或推到 `main`，GitHub Actions（`.github/workflows/test.yml`）会自动跑一次；结果在 PR 页面的 Checks。
+
+在自己电脑上跑（需要 Node.js 18+）：
+
+```
+npm install
+npx playwright install chromium
+npm test
+```
+
+测试内容：
+
+| 档案 | 检查什么 |
+| --- | --- |
+| `tests/geometry.test.mjs` | 三个 GLB 都能载入；每层模型的包围盒每个轴 min ≤ max、不是空的、和顶点实际范围一致；中心点是有效数字且在模型里面 |
+| `tests/viewer.test.mjs` | 四个视角按钮各自正确（按钮状态、说明文字、画面不同）、键盘可操作、拖动会转动、手机在 3D 上下滑仍然能滚动页面 |
+| `tests/experience.test.mjs` | 爆炸图跟着滚动（开头文字、浅色背景、三个标签都在画面内）、快速来回切换两个 3D 区块时画布跑到正确的区块、改窗口大小和横竖屏后画布大小正确且模型在画面内、模型 / three.js / 程序下载失败或没有 WebGL 时显示静态图、下载慢时先显示 Loading |
+
+`tests/fixtures/geometry.html` 是只给测试用的页面。
