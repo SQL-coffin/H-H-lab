@@ -17,8 +17,9 @@ import { createEngine } from './engine/stage.js';
 import { bindScene, bindPoseControls } from './ui/bind.js';
 import explodedCase from './scenes/exploded-case.js';
 import caseViewer from './scenes/case-viewer.js';
+import logoIntro from './scenes/logo-intro.js';
 
-const SCENES = [explodedCase, caseViewer];
+const SCENES = [logoIntro, explodedCase, caseViewer];
 
 const sections = [...document.querySelectorAll('[data-scene]')];
 

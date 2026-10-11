@@ -325,3 +325,33 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
   .viewer3d[data-state="fallback"] .case3d-poster { left: 6%; width: 88%; top: 18%; height: 44%; }
 }
 @media (prefers-reduced-motion: reduce) { .viewer3d-poses button, .viewer3d-captions p { transition: none; } }
+
+/* Logo intro. While 3D is loading or ready it is a scroll track with a sticky stage; the band
+   (logo + name) is centred and stays until the 3D logo has taken over, then only the name
+   stays for the first moments of the scroll. Without 3D it is the plain logo band. */
+.intro3d { position: relative; height: 230vh; }
+.intro3d-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #000; }
+.intro3d-canvas { opacity: 0; transition: opacity 0.6s; }
+.intro3d[data-state="ready"] .intro3d-canvas { opacity: 1; }
+.intro3d-band { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 64px 24px 0; transition: opacity 0.4s; }
+.intro3d-band .logo { width: min(40vw, 52vh * 767 / 658); }
+.intro3d[data-state="ready"] .intro3d-band .logo { visibility: hidden; }
+.intro3d[data-state="ready"] .intro3d-band { opacity: calc(1 - var(--p, 0) * 12); }
+.intro3d-hint { margin: 28px 0 0; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; }
+.intro3d-hint::after { content: "↓"; display: block; margin-top: 6px; color: var(--gold); animation: intro-bob 1.6s ease-in-out infinite; }
+@keyframes intro-bob { 50% { transform: translateY(6px); } }
+.intro3d-end { position: absolute; left: 0; right: 0; bottom: 9vh; margin: 0; text-align: center; opacity: 0; transition: opacity 0.6s; }
+.intro3d-end.is-on { opacity: 1; }
+.intro3d[data-state="fallback"] { height: auto; }
+.intro3d[data-state="fallback"] .intro3d-stage { position: static; height: auto; background: none; }
+.intro3d[data-state="fallback"] .intro3d-band { position: static; padding: 40px 24px 8px; }
+.intro3d[data-state="fallback"] .intro3d-band .logo { width: 360px; }
+.intro3d[data-state="fallback"] .intro3d-canvas, .intro3d[data-state="fallback"] .intro3d-hint,
+.intro3d[data-state="fallback"] .intro3d-end { display: none; }
+@media (max-width: 760px) {
+  .intro3d { height: 200vh; }
+  .intro3d-band .logo { width: min(86vw, 40vh * 767 / 658); }
+  .intro3d[data-state="fallback"] .intro3d-band .logo { width: 240px; }
+}
+@media (prefers-reduced-motion: reduce) { .intro3d-hint::after { animation: none; } }
