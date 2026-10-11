@@ -1,0 +1,12 @@
+{
+  "name": "hh-dental-lab-site",
+  "private": true,
+  "type": "module",
+  "description": "Static site; package.json only exists for the browser tests.",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}
