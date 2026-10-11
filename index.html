@@ -51,11 +51,19 @@
 
 <main id="top">
 
-  <!-- Logo -->
-  <section class="logo-band">
-    <img class="logo" src="images/logo.webp" alt="H&amp;H Digital Dental Laboratory" width="767" height="658">
-    <p class="logo-name">H&amp;H Digital Dental Lab</p>
-    <p class="logo-sub">Crown &amp; Bridge • Digital Workflow</p>
+  <!-- Logo intro: scrolling flies through the logo's frame into the crowns (scene: experience/scenes/logo-intro.js).
+       Without 3D it is the plain logo band. -->
+  <section class="intro3d" data-scene="logo-intro" aria-label="H&amp;H Digital Dental Lab">
+    <div class="intro3d-stage" data-3d-stage>
+      <div class="intro3d-canvas" data-3d-canvas></div>
+      <div class="intro3d-band logo-band">
+        <img class="logo" src="images/logo.webp" alt="H&amp;H Digital Dental Laboratory" width="767" height="658">
+        <p class="logo-name">H&amp;H Digital Dental Lab</p>
+        <p class="logo-sub">Crown &amp; Bridge • Digital Workflow</p>
+        <p class="intro3d-hint" aria-hidden="true">Scroll</p>
+      </div>
+      <p class="intro3d-end eyebrow" data-from="0.72" data-to="1.01">Crown &amp; Bridge • Digital • Precision</p>
+    </div>
   </section>
 
   <!-- Hero -->

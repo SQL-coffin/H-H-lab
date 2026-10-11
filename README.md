@@ -76,6 +76,14 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 2. 在 `experience/main.js` 的 `SCENES` 加上它
 3. 在 `index.html` 加一个 `data-scene="新的 id"` 的 section（结构照上面），CSS 写在 `style.css`
 
+## 开场：Logo 飞进牙冠
+
+页面最上面的 `<!-- Logo intro -->` 区块：一开始是 Logo 和名字，往下滚时镜头穿过 Logo 的金色方框（字母下方的空位），Logo 从身边飞过、金色光点掠过，后面的牙桥亮起来，最后停在牙桥正面特写，接着就是首页的主视觉。
+
+- 程序在 `experience/scenes/logo-intro.js`：Logo 是一张贴了 `images/logo.webp` 的平面，用「相加」混合，黑底会消失、只留下金色和白色线条；穿过的位置在 `AIM_PX`（Logo 图片上的像素坐标），牙桥离 Logo 多远在 `BRIDGE_DEPTH`
+- 灯光和材质和其他两个 3D 区块共用（`experience/scenes/lib/implant-case.js` 的 `addStudioLights`、`createMaterials`）
+- 不支持 3D 时就是原本的 Logo 区块（Logo + 名字），不会有一大段空白
+
 ## 3D 爆炸图（目前的场景）
 
 `index.html` 里的 `<!-- 3D case -->` 区块，互动方式和参考影片一样，是**滚动触发**：往下滚时镜头从斜侧面转到正面，牙桥先升起，牙龈跟着升起，最后背景从右边换成浅色，每一层旁边出现标签。电脑上画面还会跟着鼠标稍微倾斜。
@@ -113,6 +121,7 @@ npm test
 | --- | --- |
 | `tests/geometry.test.mjs` | 三个 GLB 都能载入；每层模型的包围盒每个轴 min ≤ max、不是空的、和顶点实际范围一致；中心点是有效数字且在模型里面 |
 | `tests/viewer.test.mjs` | 四个视角按钮各自正确（按钮状态、说明文字、画面不同）、键盘可操作、拖动会转动、手机在 3D 上下滑仍然能滚动页面 |
+| `tests/intro.test.mjs` | 开场 Logo 飞入：开头显示 Logo 和名字、飞行中画面会变、最后显示亮起的牙桥和结尾文字（电脑和手机）；没有 WebGL 或 Logo 图片载入失败时显示原本的 Logo 区块 |
 | `tests/experience.test.mjs` | 爆炸图跟着滚动（开头文字、浅色背景、三个标签都在画面内）、快速来回切换两个 3D 区块时画布跑到正确的区块、改窗口大小和横竖屏后画布大小正确且模型在画面内、模型 / three.js / 程序下载失败或没有 WebGL 时显示静态图、下载慢时先显示 Loading |
 
 `tests/fixtures/geometry.html` 是只给测试用的页面。

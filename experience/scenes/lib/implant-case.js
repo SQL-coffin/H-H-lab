@@ -8,6 +8,25 @@ export const MODELS = {
   bridge: 'assets/models/bridge.glb',
 };
 
+// Key, gold rim and fill lights used for every view of the case.
+export function addStudioLights(scene) {
+  const key = new THREE.DirectionalLight(0xffffff, 2.2);
+  key.position.set(60, 120, 90);
+  const rim = new THREE.DirectionalLight(0xe0ad5a, 2.6);
+  rim.position.set(-90, 40, -120);
+  const fill = new THREE.HemisphereLight(0xfff4e6, 0x101010, 0.6);
+  scene.add(key, rim, fill);
+}
+
+// One set of materials per call (scenes fade them independently).
+export function createMaterials() {
+  return {
+    model: new THREE.MeshStandardMaterial({ color: 0x7d8691, roughness: 0.85, metalness: 0 }),
+    tissue: new THREE.MeshPhysicalMaterial({ color: 0xc9707a, roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.4 }),
+    bridge: new THREE.MeshPhysicalMaterial({ color: 0xe9dcc6, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.12, sheen: 0.4, sheenColor: new THREE.Color(0xfff6e8) }),
+  };
+}
+
 // Builds a Three.js scene holding the case. Returns:
 //   scene, spin     spin is the turntable (rotate on y); spin = PI puts the labial side toward +z
 //   layers[name]    one group per layer; move it on z to lift it along the occlusal direction
@@ -20,18 +39,8 @@ export async function buildCase(engine) {
   scene.environment = engine.environment;
   scene.environmentIntensity = 0.55;
 
-  const key = new THREE.DirectionalLight(0xffffff, 2.2);
-  key.position.set(60, 120, 90);
-  const rim = new THREE.DirectionalLight(0xe0ad5a, 2.6);
-  rim.position.set(-90, 40, -120);
-  const fill = new THREE.HemisphereLight(0xfff4e6, 0x101010, 0.6);
-  scene.add(key, rim, fill);
-
-  const materials = {
-    model: new THREE.MeshStandardMaterial({ color: 0x7d8691, roughness: 0.85, metalness: 0 }),
-    tissue: new THREE.MeshPhysicalMaterial({ color: 0xc9707a, roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.4 }),
-    bridge: new THREE.MeshPhysicalMaterial({ color: 0xe9dcc6, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.12, sheen: 0.4, sheenColor: new THREE.Color(0xfff6e8) }),
-  };
+  addStudioLights(scene);
+  const materials = createMaterials();
 
   // spin (turntable) > root (model frame: +z is occlusal, turned so it points up) > layers.
   const spin = new THREE.Group();
