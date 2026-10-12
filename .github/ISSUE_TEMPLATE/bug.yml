@@ -1,0 +1,58 @@
+name: 🐞 Bug
+description: 网站上有地方不对（显示、互动、载入……）
+title: "Bug："
+labels: [bug]
+body:
+  - type: input
+    id: notion
+    attributes:
+      label: Notion 需求页
+      description: 「需求」表里这一行的链接（可选）
+      placeholder: https://app.notion.com/p/...
+  - type: textarea
+    id: actual
+    attributes:
+      label: 现在的情况
+      description: 发生了什么？在哪个区块？附截图或录影更好。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 重现步骤
+      placeholder: |
+        1. 用手机打开网站
+        2. 滑到 Take a closer look
+        3. 按 Fitting surface
+  - type: textarea
+    id: criteria
+    attributes:
+      label: 正确行为（验收标准）
+      description: 用「假如 / 当 / 那么」写修好之后应该怎样。每个「那么」都会变成一条自动化测试，所以要写能检查的结果。
+      value: |
+        假如 
+        当 
+        那么 
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: 装置 / 浏览器
+      multiple: true
+      options:
+        - 电脑 Chrome
+        - 电脑 Safari
+        - 电脑 Edge
+        - iPhone Safari
+        - Android Chrome
+        - iPad
+        - 其他（写在上面）
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级
+      options:
+        - 高：影响客户使用网站
+        - 中
+        - 低

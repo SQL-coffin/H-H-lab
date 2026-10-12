@@ -4,7 +4,8 @@
   "type": "module",
   "description": "Static site; package.json only exists for the browser tests.",
   "scripts": {
-    "test": "node --test --test-concurrency=1 tests/*.test.mjs"
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
+    "test:live": "node --test --test-concurrency=1 --test-reporter=spec tests/site.test.mjs tests/experience.test.mjs tests/viewer.test.mjs tests/intro.test.mjs"
   },
   "devDependencies": {
     "playwright": "1.56.1"

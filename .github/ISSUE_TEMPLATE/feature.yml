@@ -1,0 +1,44 @@
+name: ✨ 新需求 / 改版
+description: 新功能、新区块、改文案或改设计
+title: "需求："
+labels: [enhancement]
+body:
+  - type: input
+    id: notion
+    attributes:
+      label: Notion 需求页
+      description: 「需求」表里这一行的链接（可选）
+      placeholder: https://app.notion.com/p/...
+  - type: textarea
+    id: why
+    attributes:
+      label: 为什么要做
+      description: 想解决什么问题，或想让访客有什么感觉。
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 想要的效果
+      description: 参考的网站、影片或截图都可以贴在这里。
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: 验收标准
+      description: 用「假如 / 当 / 那么」写怎样才算做好。可以写几组。每个「那么」都会变成一条自动化测试。
+      value: |
+        假如 
+        当 
+        那么 
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级
+      options:
+        - 高
+        - 中
+        - 低
