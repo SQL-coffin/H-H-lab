@@ -1,0 +1,101 @@
+name: Live site check
+
+# Tests the real site after every GitHub Pages deploy, once a day, and on demand
+# (Actions > Live site check > Run workflow). If it still fails after one retry, it opens an
+# issue labelled live-check (or comments on the one already open); once the check passes again,
+# it closes that issue.
+on:
+  workflow_run:
+    workflows: [pages-build-deployment]
+    types: [completed]
+  schedule:
+    - cron: '7 1 * * *' # 09:07 in Malaysia
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: live-check
+
+jobs:
+  live-check:
+    # After a failed deploy the previous site is still up, and GitHub already reports the failure.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # The deployed commit, so the tests match the site they check.
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      # Set the repository variable SITE_URL if the site moves (e.g. to its own domain).
+      SITE_URL: ${{ vars.SITE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Test the live site
+        id: live
+        run: |
+          SITE_URL="${SITE_URL:-https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/}"
+          echo "SITE_URL=$SITE_URL" >> "$GITHUB_ENV"
+          export SITE_URL
+          echo "Checking $SITE_URL at $SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+          set -o pipefail
+          for attempt in 1 2; do
+            if npm run test:live 2>&1 | tee live.log; then exit 0; fi
+            if [ "$attempt" = 1 ]; then
+              echo "::warning::The live check failed; trying again in 2 minutes in case the site was still updating."
+              sleep 120
+            fi
+          done
+          exit 1
+
+      - name: Open or update the live-check issue
+        if: failure() && steps.live.outcome == 'failure'
+        run: |
+          gh label create live-check --repo "$GITHUB_REPOSITORY" --color B60205 --description "The real site failed its automatic check" 2>/dev/null || true
+          run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          {
+            echo "真实网站的自动检查失败了（2 分钟后重试仍失败）。"
+            echo
+            echo "- 网址：$SITE_URL"
+            echo "- 版本：$SHA"
+            echo "- 运行记录：$run"
+            echo
+            echo "**失败的测试**"
+            echo
+            echo '```'
+            grep -E '^\s*✖' live.log | sed -E 's/^\s+//; s/ \([0-9.]+ms\)$//' | grep -v 'failing tests' | sort -u | head -20 || true
+            echo '```'
+            echo
+            echo '<details><summary>测试输出（最后 80 行）</summary>'
+            echo
+            echo '```'
+            tail -n 80 live.log
+            echo '```'
+            echo '</details>'
+          } > issue.md
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --label live-check --state open --json number --jq '.[0].number // empty')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body-file issue.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "真实网站检查失败" --label live-check --label bug --body-file issue.md
+          fi
+
+      - name: Close the live-check issue once the site passes again
+        if: success()
+        run: |
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --label live-check --state open --json number --jq '.[].number' 2>/dev/null) || open=""
+          for n in $open; do
+            gh issue close "$n" --repo "$GITHUB_REPOSITORY" --reason completed \
+              --comment "真实网站检查已通过（版本 $SHA），自动关闭。运行记录：$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          done

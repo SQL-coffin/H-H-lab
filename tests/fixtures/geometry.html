@@ -1,15 +1,15 @@
 <!doctype html>
 <meta charset="utf-8">
 <title>Geometry fixture</title>
-<!-- Model paths resolve against the page, like on the site root. -->
-<base href="/">
+<!-- Paths resolve from the site folder, as they do for index.html. -->
+<base href="../../">
 <!-- Builds the implant case with the real engine and reports its geometry for tests/geometry.test.mjs. -->
-<script type="importmap">{ "imports": { "three": "/experience/vendor/three.module.min.js" } }</script>
+<script type="importmap">{ "imports": { "three": "./experience/vendor/three.module.min.js" } }</script>
 <script type="module">
   import * as THREE from 'three';
-  import { createState } from '/experience/state.js';
-  import { createEngine } from '/experience/engine/stage.js';
-  import { buildCase, boxInOwnSpace } from '/experience/scenes/lib/implant-case.js';
+  import { createState } from './experience/state.js';
+  import { createEngine } from './experience/engine/stage.js';
+  import { buildCase, boxInOwnSpace } from './experience/scenes/lib/implant-case.js';
 
   const v = (x) => x.toArray();
   try {

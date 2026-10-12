@@ -18,6 +18,24 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 仓库 **Settings → Pages → Source** 选 `Deploy from a branch`，Branch 选 `main`、文件夹 `/ (root)`，保存。
 1–2 分钟后网址是：`https://sql-coffin.github.io/H-H-lab/`
 
+## 开发流程
+
+每个改动都走同一条路：
+
+| 步骤 | 在哪里 | 做什么 |
+| --- | --- | --- |
+| 1. 需求与验收标准 | Notion「H&H 网站 · 需求与验收标准」→「需求」表 | 新增一行：要什么、怎样才算做好（假如 / 当 / 那么） |
+| 2. 建立任务 | GitHub Issues → New issue →「🐞 Bug」或「✨ 新需求 / 改版」 | 模板里有验收标准栏位；把 Issue 链接填回 Notion |
+| 3. BDD：描述正确行为 | Issue 的验收标准 | 每个「那么」都要能检查，会变成一条测试 |
+| 4. TDD：先写失败的测试 | `tests/*.test.mjs` | 测试名称写成那句「那么」；先跑一次，确认它在修改前会失败 |
+| 5. 修改 | `index.html` / `style.css` / `experience/` | 改到测试通过 |
+| 6. 运行自动化测试 | 本地 `npm test`；开 PR 后 GitHub Actions「Tests」自动跑 | 全部通过才合并 |
+| 7. 提交 | Pull request（模板里写 `Closes #编号`） | 合并后 Issue 自动关闭 |
+| 8. 部署 | GitHub Pages | 合并到 `main` 后自动上线 |
+| 9. 检查真实网站 | GitHub Actions「Live site check」 | 部署完自动在真实网址跑测试；失败会开一个 `live-check` Issue，修好后自动关闭。最后把 Notion 的状态改成「已上线」 |
+
+**测试没过就不能合并**（只需设定一次）：仓库 **Settings → Branches → Add branch ruleset**（或 Add rule），目标选 `main`，勾选 **Require status checks to pass**，加入 `browser-tests`，保存。
+
 ## 常见修改
 
 | 想改什么 | 改哪里 |
@@ -107,6 +125,8 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 
 `tests/` 里是一套小型浏览器测试（Node 自带的测试工具 + Playwright 无头 Chrome，用软件 WebGL，不需要显卡）。每次开 PR 或推到 `main`，GitHub Actions（`.github/workflows/test.yml`）会自动跑一次；结果在 PR 页面的 Checks。
 
+本地测试时网站放在 `/H-H-lab/` 子路径下（和 GitHub Pages 一样），所以只在网域根目录才有效的路径（例如 `/images/...`）在本地就会被发现。
+
 在自己电脑上跑（需要 Node.js 18+）：
 
 ```
@@ -119,9 +139,22 @@ npm test
 
 | 档案 | 检查什么 |
 | --- | --- |
+| `tests/site.test.mjs` | 整页（电脑和手机）从上滚到底：每个文件都下载成功、都在网站文件夹里、每张看得到的图片都正常显示、三个 3D 区块都载入、没有错误；页内链接和图标都有目标 |
 | `tests/geometry.test.mjs` | 三个 GLB 都能载入；每层模型的包围盒每个轴 min ≤ max、不是空的、和顶点实际范围一致；中心点是有效数字且在模型里面 |
 | `tests/viewer.test.mjs` | 四个视角按钮各自正确（按钮状态、说明文字、画面不同）、键盘可操作、拖动会转动、手机在 3D 上下滑仍然能滚动页面 |
 | `tests/intro.test.mjs` | 开场 Logo 飞入：开头显示 Logo 和名字、飞行中画面会变、最后显示亮起的牙桥和结尾文字（电脑和手机）；没有 WebGL 或 Logo 图片载入失败时显示原本的 Logo 区块 |
 | `tests/experience.test.mjs` | 爆炸图跟着滚动（开头文字、浅色背景、三个标签都在画面内）、快速来回切换两个 3D 区块时画布跑到正确的区块、改窗口大小和横竖屏后画布大小正确且模型在画面内、模型 / three.js / 程序下载失败或没有 WebGL 时显示静态图、下载慢时先显示 Loading |
 
 `tests/fixtures/geometry.html` 是只给测试用的页面。
+
+### 检查真实网站
+
+`.github/workflows/live.yml`（Actions 里的「Live site check」）在这三种时候，用真实网址 `https://sql-coffin.github.io/H-H-lab/` 跑 `site`、`experience`、`viewer`、`intro` 四组测试：
+
+- 每次 GitHub Pages 部署完成后（用刚部署的那个版本的测试）
+- 每天马来西亚时间早上 9 点左右
+- 手动：Actions →「Live site check」→「Run workflow」
+
+失败时等 2 分钟重试一次（刚部署时网站可能还在更新）；仍失败就开一个带 `live-check` 标签的 Issue，写上失败的测试和运行记录链接（已经有未关闭的就在里面留言）。之后检查通过时会自动留言并关闭它。
+
+在自己电脑上检查真实网站：`SITE_URL=https://sql-coffin.github.io/H-H-lab/ npm run test:live`。网站换了网址（例如自己的网域）时，在仓库 **Settings → Secrets and variables → Actions → Variables** 加一个 `SITE_URL`。

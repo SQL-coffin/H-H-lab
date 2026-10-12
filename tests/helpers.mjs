@@ -13,10 +13,19 @@ const TYPES = {
   '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary',
 };
 
-// Serves the repository root on a free port. Returns { url, close }.
+// Locally the site is served from a sub-folder, as GitHub Pages serves it
+// (sql-coffin.github.io/H-H-lab/), so a path that only works from the domain root fails here too.
+const BASE = '/H-H-lab';
+
+// Serves the repository under BASE on a free port. With SITE_URL set (the live check after a
+// deploy, see .github/workflows/live.yml), the tests use that address instead.
+// Returns { url, close }; url has no trailing slash.
 export async function startServer() {
+  if (process.env.SITE_URL) return { url: new URL(process.env.SITE_URL).href.replace(/\/+$/, ''), close: async () => {} };
   const server = http.createServer(async (req, res) => {
-    const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '');
+    const { pathname } = new URL(req.url, 'http://x');
+    if (!pathname.startsWith(BASE + '/')) return res.writeHead(404).end('not found');
+    const path = normalize(decodeURIComponent(pathname.slice(BASE.length))).replace(/^(\.\.[/\\])+/, '');
     const file = join(ROOT, path.endsWith('/') ? path + 'index.html' : path);
     try {
       const body = await readFile(file);
@@ -27,7 +36,7 @@ export async function startServer() {
     }
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  return { url: `http://127.0.0.1:${server.address().port}`, close: () => new Promise((r) => server.close(r)) };
+  return { url: `http://127.0.0.1:${server.address().port}${BASE}`, close: () => new Promise((r) => server.close(r)) };
 }
 
 export const WEBGL = ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
@@ -37,13 +46,19 @@ export function launch(args = WEBGL) {
   return chromium.launch({ args });
 }
 
-// Opens a page and records page errors and console errors (GPU driver chatter is ignored).
+// Opens a page and records page errors and console errors (GPU driver chatter is ignored), every
+// request it makes, and the ones that failed or got an error status.
 export async function openPage(browser, url, options = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, ...options });
   const page = await context.newPage();
   page.errors = [];
+  page.requests = [];
+  page.failedRequests = [];
   page.on('pageerror', (e) => page.errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/GL Driver|GPU stall/.test(m.text())) page.errors.push(m.text()); });
+  page.on('request', (r) => page.requests.push(r.url()));
+  page.on('requestfailed', (r) => page.failedRequests.push({ url: r.url(), why: r.failure()?.errorText }));
+  page.on('response', (r) => { if (r.status() >= 400) page.failedRequests.push({ url: r.url(), why: `HTTP ${r.status()}` }); });
   // Tests read the canvas back, which WebGL only allows when the drawing buffer is kept.
   await page.addInitScript(() => {
     const getContext = HTMLCanvasElement.prototype.getContext;

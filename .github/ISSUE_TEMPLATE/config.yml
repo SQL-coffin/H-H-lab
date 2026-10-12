@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 需求与验收标准（Notion）
+    url: https://app.notion.com/p/3f716ad988fc81458a9bc5c2aa3d22a8
+    about: 先在 Notion 的「需求」表记录需求和验收标准，再回来开 Issue。
