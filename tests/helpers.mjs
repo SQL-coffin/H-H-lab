@@ -29,7 +29,10 @@ export async function startServer() {
     const file = join(ROOT, path.endsWith('/') ? path + 'index.html' : path);
     try {
       const body = await readFile(file);
-      res.writeHead(200, { 'content-type': TYPES[extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
+      // no-cache, not no-store: Chromium can report a no-store fetch that is read as a stream
+      // (as three.js loads models) as net::ERR_ABORTED although every byte arrived
+      // (microsoft/playwright#42742). GitHub Pages does not send no-store either.
+      res.writeHead(200, { 'content-type': TYPES[extname(file)] || 'application/octet-stream', 'cache-control': 'no-cache' });
       res.end(body);
     } catch {
       res.writeHead(404).end('not found');
