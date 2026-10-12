@@ -47,18 +47,21 @@ export function launch(args = WEBGL) {
 }
 
 // Opens a page and records page errors and console errors (GPU driver chatter is ignored), every
-// request it makes, and the ones that failed or got an error status.
+// request it makes, the ones that finished, and the ones that failed or got an error status.
 export async function openPage(browser, url, options = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, ...options });
   const page = await context.newPage();
   page.errors = [];
   page.requests = [];
+  page.finishedRequests = [];
   page.failedRequests = [];
   page.on('pageerror', (e) => page.errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/GL Driver|GPU stall/.test(m.text())) page.errors.push(m.text()); });
+  const started = Date.now();
   page.on('request', (r) => page.requests.push(r.url()));
-  page.on('requestfailed', (r) => page.failedRequests.push({ url: r.url(), why: r.failure()?.errorText }));
-  page.on('response', (r) => { if (r.status() >= 400) page.failedRequests.push({ url: r.url(), why: `HTTP ${r.status()}` }); });
+  page.on('requestfinished', (r) => page.finishedRequests.push(r.url()));
+  page.on('requestfailed', (r) => page.failedRequests.push({ url: r.url(), why: r.failure()?.errorText, type: r.resourceType(), at: Date.now() - started }));
+  page.on('response', (r) => { if (r.status() >= 400) page.failedRequests.push({ url: r.url(), why: `HTTP ${r.status()}`, type: r.request().resourceType(), at: Date.now() - started }); });
   // Tests read the canvas back, which WebGL only allows when the drawing buffer is kept.
   await page.addInitScript(() => {
     const getContext = HTMLCanvasElement.prototype.getContext;

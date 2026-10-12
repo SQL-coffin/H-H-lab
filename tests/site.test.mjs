@@ -33,7 +33,11 @@ for (const [label, options] of [['desktop', {}], ['phone', { viewport: { width: 
     const site = new URL(server.url);
     const ours = page.requests.filter((u) => new URL(u).origin === site.origin);
     assert.deepEqual(ours.filter((u) => !u.startsWith(`${server.url}/`)), [], 'no file is asked for outside the site folder');
-    assert.deepEqual(page.failedRequests.filter((r) => new URL(r.url).origin === site.origin), [], 'every file of the site downloads');
+    // For each failure, also how often that file was asked for and how often it loaded.
+    const count = (list, url) => list.filter((u) => u === url).length;
+    const failed = page.failedRequests.filter((r) => new URL(r.url).origin === site.origin)
+      .map((r) => ({ ...r, requested: count(page.requests, r.url), finished: count(page.finishedRequests, r.url) }));
+    assert.deepEqual(failed, [], 'every file of the site downloads');
     const broken = await page.evaluate(() => [...document.images]
       .filter((img) => img.getClientRects().length && !img.naturalWidth)
       .map((img) => img.currentSrc || img.src));
