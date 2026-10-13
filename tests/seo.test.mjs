@@ -18,8 +18,9 @@ before(async () => {
 });
 after(async () => { await browser?.close(); await server?.close(); });
 
-// Everything the tests compare, read once: the head tags as written (not resolved against the
-// local address), the structured data, the contact links and the visible text of the page.
+// Everything the tests compare, read once: the share tags and canonical address as written, the
+// icons as the browser would fetch them, the structured data, the contact links and the visible
+// text of the page.
 function readPage(tab) {
   return tab.evaluate(() => {
     const meta = {};
@@ -87,10 +88,11 @@ test('a shared link shows a preview: title, description, address, site name and 
   assert.match(image.contentType, /^image\/jpeg/);
   assert.deepEqual([image.format, image.width, image.height], ['jpeg', 1200, 630], 'the share image is a JPEG of 1200×630');
   assert.ok(image.bytes.length < 300 * 1024, `the share image is under 300 KB (WhatsApp skips bigger ones), not ${Math.round(image.bytes.length / 1024)} KB`);
-  assert.deepEqual([meta['og:image:width'], meta['og:image:height']], [String(image.width), String(image.height)], 'og:image:width and og:image:height give the real size');
+  assert.deepEqual([meta['og:image:type'], meta['og:image:width'], meta['og:image:height']], ['image/jpeg', String(image.width), String(image.height)],
+    'og:image:type, og:image:width and og:image:height describe the real file');
 });
 
-test('the canonical address and og:url are the site address (in the live check: the address checked)', () => {
+test('canonical and og:url are the site address (in the live check: the address being checked)', () => {
   assert.match(pageInfo.canonical ?? '', /^https:\/\/[^?#\s]+\/$/, 'the canonical address is a full https address ending in /');
   assert.equal(pageInfo.meta['og:url'], pageInfo.canonical, 'og:url is the canonical address');
   // So that a move to another address (e.g. the lab's own domain) fails the live check until the

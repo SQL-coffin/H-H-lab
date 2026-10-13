@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The site's pages for search engines (it has one). Submit this file in Google Search Console;
+     if the site moves to another address, change it here and in index.html (see README). -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://sql-coffin.github.io/H-H-lab/</loc>
+  </url>
+</urlset>
