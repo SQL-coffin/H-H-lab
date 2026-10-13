@@ -10,7 +10,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TYPES = {
   '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary',
+  '.svg': 'image/svg+xml', '.glb': 'model/gltf-binary', '.xml': 'application/xml',
 };
 
 // Locally the site is served from a sub-folder, as GitHub Pages serves it
