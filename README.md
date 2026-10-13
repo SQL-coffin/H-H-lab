@@ -61,7 +61,10 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
       └──────────────► experience/ui/bind.js        把进度写进 HTML：CSS 变量、class、标签位置
 ```
 
-`experience/main.js` 是入口，把上面几层接起来。只有场景在画面上时才会绘制，离开就暂停。
+`experience/main.js` 是入口，把上面几层接起来。为了省流量、省电，3D 只在需要时才做事：
+
+- **快滚到才载入**：一个 3D 区块离画面还有大约两个画面高时，才开始下载它的模型、建好场景（距离在 `experience/main.js` 的 `NEAR`）。所以打开网站时只下载开场需要的 `bridge.glb`，`model.glb` 和 `tissue.glb` 等访客往下滚才下载
+- 只有场景在画面上时才会绘制，离开就暂停
 
 ### 一个场景在 HTML 里长这样
 
@@ -76,7 +79,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 </section>
 ```
 
-- section 上会自动标示 `data-state="loading" | "ready" | "fallback"`，CSS 用它来切换显示（场景名字写错、缺少画布位置、浏览器不支持 3D 或程序没下载成功，都会变成 `fallback`，并在 Console 显示原因）
+- section 上会自动标示 `data-state="loading" | "ready" | "fallback"`，CSS 用它来切换显示（场景名字写错、缺少画布位置、浏览器不支持 3D 或程序没下载成功，都会变成 `fallback`，并在 Console 显示原因；访客还没滚到附近的区块会一直是 `loading`）
 - 场景载入后，section 上会有 CSS 变量 `--p`（0–1 的进度），以及场景额外提供的变量（例如 `--wipe`）
 - 不支持 3D 的浏览器会显示 `assets/models/poster.webp` 静态图和开头的文字
 - 系统设置「减少动态效果」时，3D 会直接跟着滚动走（不滑行）、不跟鼠标倾斜
@@ -91,6 +94,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
    - `resize(width, height)`：画布大小改变时调用
    - `update(progress, state, size)`：每一帧调用，移动 3D 物件和镜头，回传 `{ vars, classes, anchors, showAnchors }`（都可以省略）：`vars` 变成 section 上的 CSS 变量，`classes` 是要开关的 class，`anchors` 是 `{ 名字: { x, y } }` 屏幕坐标，给 `data-anchor` 标签用
    - 模型用 `engine.load('assets/models/xxx.glb')` 载入（每个场景拿到自己的一份物件，可以共用同一个档；但几何和原本的材质是共用的，所以要换上自己的材质，不要直接修改载入的材质）；反光环境用 `engine.environment`
+   - `setup` 要等访客滚到区块附近才会被调用（见上面「快滚到才载入」）
 2. 在 `experience/main.js` 的 `SCENES` 加上它
 3. 在 `index.html` 加一个 `data-scene="新的 id"` 的 section（结构照上面），CSS 写在 `style.css`
 
@@ -144,6 +148,7 @@ npm test
 | `tests/viewer.test.mjs` | 四个视角按钮各自正确（按钮状态、说明文字、画面不同）、键盘可操作、拖动会转动、手机在 3D 上下滑仍然能滚动页面 |
 | `tests/intro.test.mjs` | 开场 Logo 飞入：开头显示 Logo 和名字、飞行中画面会变、最后显示亮起的牙桥和结尾文字（电脑和手机）；没有 WebGL 或 Logo 图片载入失败时显示原本的 Logo 区块 |
 | `tests/experience.test.mjs` | 爆炸图跟着滚动（开头文字、浅色背景、三个标签都在画面内）、快速来回切换两个 3D 区块时画布跑到正确的区块、改窗口大小和横竖屏后画布大小正确且模型在画面内、模型 / three.js / 程序下载失败或没有 WebGL 时显示静态图、下载慢时先显示 Loading |
+| `tests/loading.test.mjs` | 快滚到才载入（电脑和手机）：打开网站时只下载开场的 `bridge.glb`；3D 区块离画面还有三个半画面高时不载入、一个半画面高时就载入，滚到时已经显示 3D；模型下载失败或没有 WebGL 时，滚到 3D 区块显示静态图 |
 
 `tests/fixtures/geometry.html` 是只给测试用的页面。
 

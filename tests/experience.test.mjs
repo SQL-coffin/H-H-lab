@@ -50,6 +50,8 @@ test('the shared canvas moves to whichever 3D scene is on screen, also when jump
   const page = await open();
   await scrollScene(page, 'case-viewer');
   await waitForState(page, 'case-viewer', 'ready');
+  // A 3D section only loads once the visitor gets near it, so visit the exploded view once too.
+  await scrollScene(page, 'exploded-case', 0.5);
   await waitForState(page, 'exploded-case', 'ready');
   const where = () => page.evaluate(() => document.querySelector('canvas')?.closest('[data-scene]')?.dataset.scene);
   for (let i = 0; i < 6; i++) {
@@ -97,6 +99,8 @@ for (const [label, pattern] of [['a model', '**/bridge.glb'], ['three.js', '**/t
     const page = await open({ route: (p) => p.route(pattern, (r) => r.abort()) });
     await scrollScene(page, 'exploded-case');
     await waitForState(page, 'exploded-case', 'fallback', 60000);
+    // A 3D section only loads once the visitor gets near it, so go to the viewer too.
+    await scrollScene(page, 'case-viewer');
     await waitForState(page, 'case-viewer', 'fallback', 60000);
     const posters = await page.evaluate(() => [...document.querySelectorAll('[data-scene] .case3d-poster')].map((img) => getComputedStyle(img).display !== 'none'));
     assert.deepEqual(posters, [true, true], 'still images are shown');
