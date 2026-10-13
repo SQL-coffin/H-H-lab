@@ -1,7 +1,10 @@
 // Scene: product viewer for the implant case. Pose buttons in the HTML pick a pose (seated,
 // layers, intaglio, close-up); the case glides into it. Visitors can also drag to turn it.
 // Every pose is a handful of numbers, and the scene eases all of them toward the chosen pose.
+// While it is still gliding (into a pose, or after a drag) it tells the engine it is busy, so the
+// frame loop does not stop before the case has arrived.
 import * as THREE from 'three';
+import { ease } from '../state.js';
 import { buildCase } from './lib/implant-case.js';
 
 const LIFT = { tissue: 11, bridge: 26 };
@@ -20,6 +23,7 @@ const POSES = {
 };
 const FIRST = 'seated';
 const EASE_RATE = 4.5; // per second
+const DRAG_RATE = 10; // per second
 const FLIP_ANGLE = -Math.PI; // a half turn about the arch's long axis: the fitting surface faces up
 
 const mix = (a, b, t) => a + (b - a) * t;
@@ -57,9 +61,10 @@ export default {
         const own = state.scenes['case-viewer'];
         const goal = POSES[own.pose] || POSES[FIRST];
         const k = state.reducedMotion ? 1 : 1 - Math.exp(-state.dt * EASE_RATE);
-        for (const key of Object.keys(cur)) cur[key] += (goal[key] - cur[key]) * k;
-        turn.x += (own.drag.x - turn.x) * (state.reducedMotion ? 1 : 1 - Math.exp(-state.dt * 10));
-        turn.y += (own.drag.y - turn.y) * (state.reducedMotion ? 1 : 1 - Math.exp(-state.dt * 10));
+        for (const key of Object.keys(cur)) cur[key] = ease(cur[key], goal[key], k);
+        const kd = state.reducedMotion ? 1 : 1 - Math.exp(-state.dt * DRAG_RATE);
+        turn.x = ease(turn.x, own.drag.x, kd);
+        turn.y = ease(turn.y, own.drag.y, kd);
 
         // Layers
         layers.bridge.position.set(bridgeCenter.x, bridgeCenter.y, bridgeCenter.z + LIFT.bridge * cur.explode);
@@ -96,7 +101,9 @@ export default {
         camera.lookAt(focusPoint);
         camera.updateProjectionMatrix();
 
-        return {};
+        // Still gliding into the pose or catching up with the drag: keep the frames coming.
+        const busy = Object.keys(cur).some((key) => cur[key] !== goal[key]) || turn.x !== own.drag.x || turn.y !== own.drag.y;
+        return { busy };
       },
     };
   },

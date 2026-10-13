@@ -64,7 +64,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 `experience/main.js` 是入口，把上面几层接起来。为了省流量、省电，3D 只在需要时才做事：
 
 - **快滚到才载入**：一个 3D 区块离画面还有大约两个画面高时，才开始下载它的模型、建好场景（距离在 `experience/main.js` 的 `NEAR`）。所以打开网站时只下载开场需要的 `bridge.glb`，`model.glb` 和 `tissue.glb` 等访客往下滚才下载
-- 只有场景在画面上时才会绘制，离开就暂停
+- **画面静止就停**：只有场景在画面上时才会绘制，离开就暂停；在画面上时，只要没在滚动、没动鼠标，而且动画（滚动后的滑行、鼠标倾斜、姿态过渡、拖动后的转动）都到位了，也会停止重画，画面保持最后的样子。访客一滚动、动鼠标、按姿态按钮、拖动模型、改窗口大小或转手机方向，就马上继续画
 
 ### 一个场景在 HTML 里长这样
 
@@ -92,9 +92,11 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 1. 在 `experience/scenes/` 新增一个档，照 `exploded-case.js` 的格式：导出 `{ id, async setup({ engine, el, state }) }`，`setup` 回传：
    - `scene`、`camera`（Three.js 物件），可选 `exposure`（亮度，默认 1）
    - `resize(width, height)`：画布大小改变时调用
-   - `update(progress, state, size)`：每一帧调用，移动 3D 物件和镜头，回传 `{ vars, classes, anchors, showAnchors }`（都可以省略）：`vars` 变成 section 上的 CSS 变量，`classes` 是要开关的 class，`anchors` 是 `{ 名字: { x, y } }` 屏幕坐标，给 `data-anchor` 标签用
+   - `update(progress, state, size)`：每一帧调用，移动 3D 物件和镜头，回传 `{ vars, classes, anchors, showAnchors, busy }`（都可以省略）：`vars` 变成 section 上的 CSS 变量，`classes` 是要开关的 class，`anchors` 是 `{ 名字: { x, y } }` 屏幕坐标，给 `data-anchor` 标签用；`busy: true` 表示场景自己还在动（例如查看器还在转到新姿态），引擎会继续画下一帧，都到位后不再回传 `busy: true`，画面才会停下
    - 模型用 `engine.load('assets/models/xxx.glb')` 载入（每个场景拿到自己的一份物件，可以共用同一个档；但几何和原本的材质是共用的，所以要换上自己的材质，不要直接修改载入的材质）；反光环境用 `engine.environment`
+   - 场景自己做的平滑（像查看器的姿态过渡）用 `experience/state.js` 的 `ease()`：快到终点时会直接到位，动画才会真的结束
    - `setup` 要等访客滚到区块附近才会被调用（见上面「快滚到才载入」）
+   - 新的互动（例如新的按钮）改变了画面时，要调用 `engine.wake()`，否则停着的画面不会更新
 2. 在 `experience/main.js` 的 `SCENES` 加上它
 3. 在 `index.html` 加一个 `data-scene="新的 id"` 的 section（结构照上面），CSS 写在 `style.css`
 
@@ -149,6 +151,7 @@ npm test
 | `tests/intro.test.mjs` | 开场 Logo 飞入：开头显示 Logo 和名字、飞行中画面会变、最后显示亮起的牙桥和结尾文字（电脑和手机）；没有 WebGL 或 Logo 图片载入失败时显示原本的 Logo 区块 |
 | `tests/experience.test.mjs` | 爆炸图跟着滚动（开头文字、浅色背景、三个标签都在画面内）、快速来回切换两个 3D 区块时画布跑到正确的区块、改窗口大小和横竖屏后画布大小正确且模型在画面内、模型 / three.js / 程序下载失败或没有 WebGL 时显示静态图、下载慢时先显示 Loading |
 | `tests/loading.test.mjs` | 快滚到才载入（电脑和手机）：打开网站时只下载开场的 `bridge.glb`；3D 区块离画面还有三个半画面高时不载入、一个半画面高时就载入，滚到时已经显示 3D；模型下载失败或没有 WebGL 时，滚到 3D 区块显示静态图 |
+| `tests/idle.test.mjs` | 画面静止就停（电脑和手机）：三个 3D 区块动画到位后 2 秒内不画新的一帧、画面还在；停下后滚动、动鼠标、鼠标离开、按姿态按钮、拖动、改窗口大小 / 转手机方向都会马上继续画、画面跟着更新；按姿态按钮后要转到位才停；切换「减少动态效果」也会马上重画 |
 
 `tests/fixtures/geometry.html` 是只给测试用的页面。
 
