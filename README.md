@@ -75,7 +75,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 | `email_click` | 点电邮地址 | `link_location` |
 | `map_click` | 点地址（打开 Google 地图） | `link_location` |
 | `viewer_pose` | 在「Take a closer look」按视角按钮，每按一次记一次（页面打开时默认的视角不算） | `pose`：`seated` 装在模型上、`layers` 三层分开、`intaglio` 牙桥内面（Fitting surface）、`closeup` 特写 |
-| `section_view` | 某个位置出现在画面上（看到一半就算；比画面高的，占满半个画面就算）；每次打开网页，每个位置只记一次 | `section`：`hero` 主视觉、`case3d_end` 看完 3D 爆炸图（滚到它的最后）、`viewer` 3D 查看器「Take a closer look」、`contact` 页尾联络资料 |
+| `section_view` | 某个位置出现在画面上，并且停留至少半秒（看到一半就算；比画面高的，占满半个画面就算）；只是很快经过的不算，例如在最上面按选单的「Contact」，网页一路滑下去经过的 3D 和查看器。每次打开网页，每个位置只记一次 | `section`：`hero` 主视觉、`case3d_end` 看完 3D 爆炸图（滚到它的最后）、`viewer` 3D 查看器「Take a closer look」、`contact` 页尾联络资料 |
 
 `link_location` 的值（写在每个链接的 `data-track` 里）：
 
@@ -202,7 +202,7 @@ npm test
 | `tests/viewer.test.mjs` | 四个视角按钮各自正确（按钮状态、说明文字、画面不同）、键盘可操作、拖动会转动、手机在 3D 上下滑仍然能滚动页面 |
 | `tests/intro.test.mjs` | 开场 Logo 飞入：开头显示 Logo 和名字、飞行中画面会变、最后显示亮起的牙桥和结尾文字（电脑和手机）；没有 WebGL 或 Logo 图片载入失败时显示原本的 Logo 区块 |
 | `tests/experience.test.mjs` | 爆炸图跟着滚动（开头文字、浅色背景、三个标签都在画面内）、快速来回切换两个 3D 区块时画布跑到正确的区块、改窗口大小和横竖屏后画布大小正确且模型在画面内、模型 / three.js / 程序下载失败或没有 WebGL 时显示静态图、下载慢时先显示 Loading |
-| `tests/analytics.test.mjs` | 网站分析：`ga-id` 是空的或正确的 `G-` 编号；没填编号（或填错）时不下载任何 Google 程序、网站和链接照常；填了编号时用这个编号载入 GA，事件都会送出；每个 WhatsApp / Instagram / Email / 地图链接点了记一次、带上位置、链接照常打开（鼠标中键在新标签页打开也算，右键不算）；视角按钮记录姿态（默认的不算）；电脑和手机往下滚、再滚回来，四个位置各只记一次 |
+| `tests/analytics.test.mjs` | 网站分析：`ga-id` 是空的或正确的 `G-` 编号；没填编号（或填错）时不下载任何 Google 程序、网站和链接照常；填了编号时用这个编号载入 GA，事件都会送出；每个 WhatsApp / Instagram / Email / 地图链接点了记一次、带上位置、链接照常打开（鼠标中键在新标签页打开也算，右键不算）；视角按钮记录姿态（默认的不算）；电脑和手机往下滚、再滚回来，四个位置各只记一次；只是很快经过的位置不算（按选单跳到 Contact 时只记 `contact`） |
 | `tests/a11y.test.mjs` | 无障碍：整页（电脑和手机）载入完后用 axe（很多无障碍检查工具用的核心）检查，没有任何问题；WhatsApp 浮动按钮外观和位置不变（56×56，离右边和下面各 20px，滚动时固定不动、没被挡住） |
 
 `tests/fixtures/geometry.html` 是只给测试用的页面。

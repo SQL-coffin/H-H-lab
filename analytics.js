@@ -2,8 +2,8 @@
 // pick in the 3D viewer, and how far down the page they get.
 //
 // index.html holds the measurement ID: <meta name="ga-id" content="G-XXXXXXX">. While it is empty,
-// nothing is downloaded from Google and nothing leaves the page; the events below only wait in
-// memory (window.dataLayer) until the visitor leaves.
+// no Google Analytics code is downloaded and no analytics data is sent; the events below only wait
+// in memory (window.dataLayer) until the visitor leaves.
 //
 //   whatsapp_click, instagram_click, email_click, map_click
 //                   a contact link was clicked (or opened in a new tab with the middle button);
@@ -11,8 +11,10 @@
 //   viewer_pose     a "Take a closer look" pose button was pressed; pose = its data-pose name.
 //                   The pose shown when the page opens is chosen by the code, not a press, so it
 //                   is not counted.
-//   section_view    a part of the page marked data-track-view="name" came into view (at least half
-//                   of it, or half the screen when it is taller); section = name. Once per visit each.
+//   section_view    a part of the page marked data-track-view="name" stayed in view for half a
+//                   second (at least half of it, or half the screen when it is taller); section =
+//                   name. Once per visit each. Parts that only fly past, as the header menu's smooth
+//                   jump to Contact passes the 3D, are not counted.
 //
 // Nothing here stops a click or a link, and errors are caught, so analytics can never break the
 // page: with Google blocked (ad blockers) or unreachable, everything else works the same.
@@ -81,20 +83,49 @@ document.addEventListener('auxclick', onClick, true);
 // often enough while it scrolls by.
 const STEPS = Array.from({ length: 101 }, (_, i) => i / 100);
 
+// How long a part must stay in view to count as seen. A smooth jump from the header menu to
+// Contact passes the 3D and the viewer in a fraction of a second, without the visitor seeing them.
+const LOOK_MS = 500;
+
+// Enough of a part is in view when at least half of it shows, or half the screen when it is taller.
+const enoughInView = (shown, height, screen) => shown >= Math.min(height, screen) / 2;
+
 function watchSections() {
   const parts = document.querySelectorAll('[data-track-view]');
   if (!parts.length || !('IntersectionObserver' in window)) return;
   const seen = new Set();
+  const timers = new Map(); // part -> its half-second timer, while it is in view and not yet counted
+
+  const record = (part) => {
+    observer.unobserve(part);
+    const name = part.dataset.trackView;
+    if (seen.has(name)) return;
+    seen.add(name);
+    gtag('event', 'section_view', { section: name });
+  };
+
+  // When the half second is up, look once more at the next frame, where the scroll position is
+  // the latest: while the 3D loads, the page can be too busy to run this timer on time, and by
+  // then a part that was only passing by has long gone.
+  const lookAgain = (part) => {
+    timers.delete(part);
+    requestAnimationFrame(() => {
+      const box = part.getBoundingClientRect();
+      const screen = window.innerHeight;
+      if (enoughInView(Math.min(box.bottom, screen) - Math.max(box.top, 0), box.height, screen)) record(part);
+    });
+  };
+
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
-      const name = entry.target.dataset.trackView;
+      const part = entry.target;
       const screen = entry.rootBounds ? entry.rootBounds.height : window.innerHeight;
-      const needed = Math.min(entry.boundingClientRect.height, screen) / 2;
-      if (!entry.isIntersecting || entry.intersectionRect.height < needed) continue;
-      observer.unobserve(entry.target);
-      if (seen.has(name)) continue;
-      seen.add(name);
-      gtag('event', 'section_view', { section: name });
+      const inView = entry.isIntersecting && enoughInView(entry.intersectionRect.height, entry.boundingClientRect.height, screen);
+      if (inView && !timers.has(part)) timers.set(part, setTimeout(() => lookAgain(part), LOOK_MS));
+      if (!inView && timers.has(part)) {
+        clearTimeout(timers.get(part));
+        timers.delete(part);
+      }
     }
   }, { threshold: STEPS });
   parts.forEach((el) => observer.observe(el));

@@ -80,18 +80,36 @@ const events = (page, match = /./) => page.evaluate((source) => (window.dataLaye
 // Waits until the browser has drawn the page (and so checked what is on screen) twice.
 const nextFrames = (page) => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 30)))));
 
+// A part of the page counts as seen (section_view) once it has stayed on screen for half a second.
+// LOOK is a little longer than that.
+const LOOK = 700;
+
+// Stays where the page is long enough for what is on screen to count as seen: the browser draws
+// it, LOOK passes, and it draws one more frame (where the page takes its last look before counting).
+const lookAround = (page) => page.evaluate(async (look) => {
+  await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 30))));
+  await new Promise((ok) => setTimeout(ok, look));
+  await new Promise((ok) => requestAnimationFrame(ok));
+}, LOOK);
+
 // Scrolls the whole page from the top to the bottom (or back up) most of a screen at a time,
-// letting each position be drawn.
-async function scrollPage(page, direction) {
-  await page.evaluate(async (down) => {
+// letting each position be drawn; with `look`, also staying at each one for that long (ms), like
+// a visitor reading the page.
+async function scrollPage(page, direction, look = 0) {
+  await page.evaluate(async ([down, look]) => {
+    const frames = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 30))));
     const bottom = () => document.documentElement.scrollHeight - innerHeight;
     const step = innerHeight * 0.8;
     for (let y = down ? 0 : bottom(); ; y = down ? Math.min(y + step, bottom()) : Math.max(y - step, 0)) {
       window.scrollTo({ top: y, behavior: 'instant' });
-      await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 30))));
+      await frames();
+      if (look) {
+        await new Promise((ok) => setTimeout(ok, look));
+        await new Promise((ok) => requestAnimationFrame(ok));
+      }
       if (down ? y >= bottom() : y <= 0) break;
     }
-  }, direction === 'down');
+  }, [direction === 'down', look]);
 }
 
 async function until(check, timeout = 15000) {
@@ -131,7 +149,7 @@ test('as published, Google Analytics is downloaded only when index.html has an I
   assert.deepEqual(page.errors, []);
 });
 
-test('without an ID nothing is downloaded from Google, and the page and its links work as before', async (t) => {
+test('without an ID no Google Analytics code is downloaded, and the page and its links work as before', async (t) => {
   const meta = {};
   const page = await open(t, { route: (p) => Promise.all([serveWithGaId(p, '', meta), standInContactSites(p)]) });
   assert.ok(meta.found, 'index.html has a <meta name="ga-id"> for the ID');
@@ -145,7 +163,7 @@ test('without an ID nothing is downloaded from Google, and the page and its link
   assert.deepEqual(page.errors, []);
 });
 
-test('an ID that is not a Google Analytics 4 ID (G-...) is ignored: nothing is downloaded from Google', async (t) => {
+test('an ID that is not a Google Analytics 4 ID (G-...) is ignored: no Google Analytics code is downloaded', async (t) => {
   const meta = {};
   const page = await open(t, { route: (p) => serveWithGaId(p, 'UA-12345678-1', meta) });
   assert.ok(meta.found, 'index.html has a <meta name="ga-id"> for the ID');
@@ -162,6 +180,8 @@ test('with an ID in index.html, Google Analytics loads with that ID and gets eve
   await clickAndSeeWhatOpens(page, whatsapp);
   await page.click('[data-scene="case-viewer"] [data-pose="layers"]');
   await scrollPage(page, 'down');
+  // The contact details at the bottom count once they have been on screen for half a second.
+  await until(async () => (await events(page, /^section_view$/)).length);
 
   await until(() => googleRequests(page).length);
   assert.deepEqual(googleRequests(page), [gtagUrl(TEST_ID)], 'Google Analytics is downloaded once, with this ID');
@@ -225,19 +245,50 @@ for (const [label, options] of [['desktop', {}], ['phone', PHONE]]) {
   test(`${label}: scrolling down the page records one section_view each for the hero, the end of the 3D exploded view, the viewer and the contact details, also after scrolling back`, async (t) => {
     const page = await open(t, options);
     const views = async () => (await events(page, /^section_view$/)).map(([, params]) => params);
-    await nextFrames(page);
+    await lookAround(page);
     assert.deepEqual(await views(), [], 'nothing is counted at the top, where only the logo intro shows');
     await scrollScene(page, 'exploded-case', 0.9);
-    await nextFrames(page);
+    await lookAround(page);
     assert.deepEqual(await views(), [], 'the 3D exploded view is not finished part-way through');
     await scrollScene(page, 'exploded-case', 1);
-    await nextFrames(page);
+    await lookAround(page);
     assert.deepEqual(await views(), [{ section: 'case3d_end' }], 'the end of the 3D exploded view is counted');
 
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    await scrollPage(page, 'down');
-    await scrollPage(page, 'up');
+    await scrollPage(page, 'down', LOOK);
+    await scrollPage(page, 'up', LOOK);
     assert.deepEqual(await views(), ['case3d_end', 'hero', 'viewer', 'contact'].map((section) => ({ section })), 'each part once, however often it is passed');
     assert.deepEqual(page.errors, []);
   });
 }
+
+test('desktop: parts of the page that only fly past are not counted: the header menu\'s smooth jump to Contact records only the contact details, and the end of the 3D on screen for a moment records nothing', async (t) => {
+  const page = await open(t);
+  const views = async () => (await events(page, /^section_view$/)).map(([, params]) => params);
+  await nextFrames(page);
+
+  // Like a visitor at the top: the menu link, with the site's smooth scrolling, passes the hero,
+  // the 3D exploded view and the viewer on its way down.
+  await page.click('header nav a[href="#contact"]');
+  await until(async () => (await views()).length);
+  await lookAround(page);
+  assert.deepEqual(await views(), [{ section: 'contact' }], 'only where the jump stops is counted');
+
+  // The end of the 3D comes into view and, as soon as the browser has seen it there, the page
+  // moves on to the bottom: on screen for a moment, not half a second.
+  await page.evaluate(() => {
+    const end = document.querySelector('[data-track-view="case3d_end"]');
+    const watch = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      watch.disconnect();
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' });
+      window.flewPast = true;
+    });
+    watch.observe(end);
+  });
+  await scrollScene(page, 'exploded-case', 1);
+  await page.waitForFunction(() => window.flewPast === true);
+  await lookAround(page);
+  assert.deepEqual(await views(), [{ section: 'contact' }], 'the end of the 3D, seen for a moment, is not counted');
+  assert.deepEqual(page.errors, []);
+});
