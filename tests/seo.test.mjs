@@ -19,8 +19,8 @@ before(async () => {
 after(async () => { await browser?.close(); await server?.close(); });
 
 // Everything the tests compare, read once: the share tags and canonical address as written, the
-// icons as the browser would fetch them, the structured data, the contact links and the visible
-// text of the page.
+// icons as the browser would fetch them, the structured data, the contact links, the lab's name
+// as the logo gives it, the address at the bottom of the page and the visible text of the page.
 function readPage(tab) {
   return tab.evaluate(() => {
     const meta = {};
@@ -28,6 +28,8 @@ function readPage(tab) {
     const links = (rel) => [...document.querySelectorAll('link')].filter((l) => l.relList.contains(rel))
       .map((l) => ({ href: l.href, sizes: l.getAttribute('sizes') }));
     const hrefs = (selector) => [...document.querySelectorAll(selector)].map((a) => a.getAttribute('href'));
+    const oneLine = (text) => text.replace(/\s+/g, ' ').trim();
+    const addressLabel = [...document.querySelectorAll('dt')].find((dt) => oneLine(dt.textContent) === 'Address');
     return {
       meta,
       canonical: document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
@@ -35,14 +37,25 @@ function readPage(tab) {
       appleIcons: links('apple-touch-icon'),
       structuredData: [...document.querySelectorAll('script[type="application/ld+json"]')].map((s) => s.textContent),
       whatsapp: hrefs('a[href*="wa.me/"]').map((h) => new URL(h).pathname.slice(1)),
-      emails: hrefs('a[href^="mailto:"]').map((h) => h.slice('mailto:'.length)),
+      // Only the email address, without what may follow it (mailto:…?subject=New%20case).
+      emails: hrefs('a[href^="mailto:"]').map((h) => h.slice('mailto:'.length).split('?')[0]),
       instagram: hrefs('a[href*="instagram.com/"]'),
-      text: document.body.innerText.replace(/\s+/g, ' '),
+      logoNames: [...document.querySelectorAll('img[src*="logo"]')].map((img) => img.alt),
+      // The line break in the footer address becomes a space.
+      address: addressLabel?.nextElementSibling ? oneLine(addressLabel.nextElementSibling.innerText) : undefined,
+      text: oneLine(document.body.innerText),
     };
   }).finally(() => tab.context().close());
 }
 
 const unique = (list) => [...new Set(list)];
+
+// An Instagram profile address without what links copied from the app add: a share code
+// (?igsh=…) or a / at the end.
+function profile(url) {
+  const { origin, pathname } = new URL(url);
+  return origin + pathname.replace(/\/+$/, '');
+}
 
 // Share tags and structured data must hold full addresses (apps that build a preview do not work
 // them out from the page's address), so they point at the real site. Locally that site is not
@@ -114,20 +127,28 @@ test('Google gets LocalBusiness data that matches the contact details on the pag
   const lab = JSON.parse(pageInfo.structuredData[0]);
   assert.equal(lab['@context'], 'https://schema.org');
   assert.equal(lab['@type'], 'LocalBusiness');
-  assert.ok(lab.name && pageInfo.text.includes(lab.name), `the name "${lab.name}" is the lab's name on the page`);
+  // The whole name, as the logo on the page gives it: a part of it ("H") is not the lab's name.
+  assert.ok(lab.name && pageInfo.logoNames.includes(lab.name),
+    `the name "${lab.name}" is the lab's name as the logo on the page gives it (${JSON.stringify(unique(pageInfo.logoNames))})`);
   assert.equal(lab.url, pageInfo.canonical, 'url is the canonical address');
 
   assert.ok(lab.telephone && pageInfo.text.includes(lab.telephone), `the phone number "${lab.telephone}" is written as on the page`);
   assert.deepEqual(unique(pageInfo.whatsapp), [lab.telephone.replace(/\D/g, '')], 'the phone number is the WhatsApp number of the page links');
   assert.deepEqual(unique(pageInfo.emails), [lab.email], 'the email is the one the page links to');
-  for (const link of unique(pageInfo.instagram)) assert.ok([].concat(lab.sameAs ?? []).includes(link), `sameAs lists the page's Instagram ${link}`);
+  const sameAs = [].concat(lab.sameAs ?? []).map(profile);
+  for (const link of unique(pageInfo.instagram.map(profile))) assert.ok(sameAs.includes(link), `sameAs lists the page's Instagram ${link}`);
 
   const address = lab.address ?? {};
   assert.equal(address['@type'], 'PostalAddress');
+  assert.equal(address.addressLocality, 'Johor Bahru', 'the town is Johor Bahru');
   assert.equal(address.addressCountry, 'MY');
-  assert.ok(address.streetAddress && pageInfo.text.includes(address.streetAddress), `the street "${address.streetAddress}" is the address on the page`);
-  assert.ok(address.postalCode && address.addressLocality && pageInfo.text.includes(`${address.postalCode} ${address.addressLocality}`),
-    `"${address.postalCode} ${address.addressLocality}" is the postcode and town on the page`);
+  // Compared with the address at the bottom of the page from its start up to the state, so a
+  // shortened street or town ("Johor" for "Johor Bahru") does not pass. The page may write the
+  // state in full ("Johor Darul Ta'zim" for "Johor").
+  assert.ok(pageInfo.address, 'the bottom of the page gives the address (Address)');
+  const written = `${address.streetAddress}, ${address.postalCode} ${address.addressLocality}, ${address.addressRegion}`;
+  assert.ok(pageInfo.address.startsWith(written) && !/^\w/.test(pageInfo.address.slice(written.length)),
+    `"${written}" is the address at the bottom of the page ("${pageInfo.address}")`);
 
   for (const key of ['logo', 'image']) {
     const image = await downloadImage(onSite(lab[key], key));
