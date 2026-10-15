@@ -41,7 +41,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 
 | 想改什么 | 改哪里 |
 | --- | --- |
-| 文字 | `index.html` |
+| 文字 | `index.html`。改了首页大标题或网页说明（`<head>` 里的 `description`）时，也要一起改分享图 `images/og-image.jpg` 上的字、`<head>` 里的 `og:title`、`og:image:alt`（分享图的文字说明）和商家资料里的 `description`，测试不会发现这些地方没改 |
 | WhatsApp 号码 | `index.html` 里所有 `wa.me/601116874631`（号码前面不要 `+`、不要空格）、页面上写出来的 `+60 11-1687 4631`，还有 `<head>` 商家资料里的 `telephone`（写法和页面上一样） |
 | Instagram | `index.html` 里所有 `instagram.com/h.h_dentalstudio`（包括 `<head>` 商家资料里的 `sameAs`） |
 | Email、地址 | 页面最下面的联络资料，和 `<head>` 商家资料里的 `email`、`address` 一起改 |
@@ -65,13 +65,15 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 
 | 文件 | 尺寸 | 用在哪里 |
 | --- | --- | --- |
-| `images/og-image.jpg` | 1200×630，JPG，小于 300 KB（太大的图 WhatsApp 可能不显示） | 分享预览。重要的内容放中间，有些 App 只显示中间的正方形 |
+| `images/og-image.jpg` | 1200×630，JPG，小于 300 KB（太大的图 WhatsApp 可能不显示） | 分享预览。Logo 和所有的字都放在中间 600 像素宽的范围里（左右各留 300 像素），因为有些 App 只显示中间的正方形 |
 | `images/favicon-32.png` | 32×32，PNG | 浏览器分页上的图标 |
-| `images/icon-192.png` | 192×192，PNG | Android 和 Google 搜索结果旁边的图标 |
+| `images/icon-192.png` | 192×192，PNG | Android 手机「加到主画面」的图标（Google 搜索结果旁边的图标见下面） |
 | `images/apple-touch-icon.png` | 180×180，PNG，黑色底、不透明 | iPhone「加入主画面」的图标 |
 | `images/icon-512.png` | 512×512，PNG | 商家资料里的 Logo |
 
 图标都是正方形，用 Logo 中间的金色 H|H 重画；32×32 那个是一格一格画的，缩小了也清楚。分享图里的字和 Logo 用的是网站一样的字体和金色。
+
+**Google 搜索结果旁边的小图标**：Google 每个网域只用一个图标，而且只从网域最上层的首页读取。现在的网址 `https://sql-coffin.github.io/H-H-lab/` 是 `sql-coffin.github.io` 下面的一个文件夹，所以搜索结果旁边不会显示 H&H 的图标（和下面的 robots.txt 是同一个原因）。以后改用自己的网域，`icon-192.png` 就会用上，不用重做（Google 要求的尺寸是 48 的倍数，192 符合）。
 
 社交平台会把分享预览存一段时间，换了图或文字以后不会马上更新：Facebook 可以在 Sharing Debugger（`developers.facebook.com/tools/debug`）贴上网址按「Scrape Again」，LinkedIn 用 Post Inspector（`linkedin.com/post-inspector`）。
 
@@ -80,7 +82,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 `sitemap.xml` 是给搜索引擎的网页清单（目前只有这一页）。网站上线后做一次：
 
 1. 打开 Google Search Console（`search.google.com/search-console`），新增资源，选「网址前缀」，填 `https://sql-coffin.github.io/H-H-lab/`，按它的说明验证（例如把它给的 `<meta>` 标签加到 `index.html` 的 `<head>`）。
-2. 左边选「Sitemaps」，填 `sitemap.xml`，提交。
+2. 左边选「站点地图（Sitemaps）」，填 `sitemap.xml`，提交。
 
 **为什么没有 robots.txt**：搜索引擎只读网域最上层的 `https://sql-coffin.github.io/robots.txt`，放在 `/H-H-lab/` 文件夹里的会被忽略，所以这里不做。没有 robots.txt 时整个网站都可以被搜索，这正是我们要的；Google 靠上面提交的 `sitemap.xml` 找到网页。以后改用自己的网域（网站在网域最上层）时，才用得上 robots.txt。
 
