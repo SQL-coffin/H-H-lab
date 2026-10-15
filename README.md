@@ -7,7 +7,8 @@
 ```
 index.html      全部内容，每个区块上面有 <!-- Hero --> 之类的注释
 style.css       版面和颜色（最上面 :root 是颜色：--gold 金色、--blue 按钮蓝）
-images/         照片（WebP 格式）
+sitemap.xml     给 Google 的网页清单（见下面「分享预览与 Google 搜索资料」）
+images/         照片（WebP 格式），还有分享图和图标（JPG / PNG，见「分享预览与 Google 搜索资料」）
 images/icons/   金色图标
 experience/     沉浸式体验程序（滚动 → 状态 → 3D / 文字），说明见下面「沉浸式体验架构」
 assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
@@ -40,11 +41,54 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 
 | 想改什么 | 改哪里 |
 | --- | --- |
-| 文字 | `index.html` |
-| WhatsApp 号码 | `index.html` 里所有 `wa.me/601116874631`（号码前面不要 `+`、不要空格） |
-| Instagram | `index.html` 里所有 `instagram.com/h.h_dentalstudio` |
+| 文字 | `index.html`。改了首页大标题或网页说明（`<head>` 里的 `description`）时，也要一起改分享图 `images/og-image.jpg` 上的字、`<head>` 里的 `og:title`、`og:image:alt`（分享图的文字说明）和商家资料里的 `description`，测试不会发现这些地方没改 |
+| WhatsApp 号码 | `index.html` 里所有 `wa.me/601116874631`（号码前面不要 `+`、不要空格）、页面上写出来的 `+60 11-1687 4631`，还有 `<head>` 商家资料里的 `telephone`（写法和页面上一样） |
+| Instagram | `index.html` 里所有 `instagram.com/h.h_dentalstudio`（包括 `<head>` 商家资料里的 `sameAs`） |
+| Email、地址 | 页面最下面的联络资料，和 `<head>` 商家资料里的 `email`、`address` 一起改 |
+| 分享图、图标 | 见下面「分享预览与 Google 搜索资料」 |
 | 换照片 | 用同一个文件名覆盖 `images/` 里的图片 |
 | 颜色 | `style.css` 最上面的 `--gold`、`--blue` |
+
+## 分享预览与 Google 搜索资料
+
+`index.html` 的 `<head>` 里有三组给其他程序读的资料（访客在页面上看不到）：
+
+- **分享预览**（`og:` 和 `twitter:` 开头的标签）：把网址贴到 WhatsApp、Facebook、LinkedIn、X 时，显示分享图、标题、说明和网站名称。
+- **正式网址**（`canonical` 和 `og:url`）：告诉 Google 和社交平台，这一页的正式网址是 `https://sql-coffin.github.io/H-H-lab/`。
+- **商家资料**（`<script type="application/ld+json">`）：给 Google 看的名称、网址、Logo、电话、Email、地址和 Instagram。内容要和页面最下面的联络资料一样，测试会比对。
+
+这些地方的网址都要写完整（`https://...`），因为做分享预览的程序不会自己补上前面的部分。
+
+### 换分享图或图标
+
+用同一个文件名覆盖，尺寸要一样：
+
+| 文件 | 尺寸 | 用在哪里 |
+| --- | --- | --- |
+| `images/og-image.jpg` | 1200×630，JPG，小于 300 KB（太大的图 WhatsApp 可能不显示） | 分享预览。Logo 和所有的字都放在中间 600 像素宽的范围里（左右各留 300 像素），因为有些 App 只显示中间的正方形 |
+| `images/favicon-32.png` | 32×32，PNG | 浏览器分页上的图标 |
+| `images/icon-192.png` | 192×192，PNG | Android 手机「加到主画面」的图标（Google 搜索结果旁边的图标见下面） |
+| `images/apple-touch-icon.png` | 180×180，PNG，黑色底、不透明 | iPhone「加入主画面」的图标 |
+| `images/icon-512.png` | 512×512，PNG | 商家资料里的 Logo |
+
+图标都是正方形，用 Logo 中间的金色 H|H 重画；32×32 那个是一格一格画的，缩小了也清楚。分享图里的字和 Logo 用的是网站一样的字体和金色。
+
+**Google 搜索结果旁边的小图标**：Google 每个网域只用一个图标，而且只从网域最上层的首页读取。现在的网址 `https://sql-coffin.github.io/H-H-lab/` 是 `sql-coffin.github.io` 下面的一个文件夹，所以搜索结果旁边不会显示 H&H 的图标（和下面的 robots.txt 是同一个原因）。以后改用自己的网域，`icon-192.png` 就会用上，不用重做（Google 要求的尺寸是 48 的倍数，192 符合）。
+
+社交平台会把分享预览存一段时间，换了图或文字以后不会马上更新：Facebook 可以在 Sharing Debugger（`developers.facebook.com/tools/debug`）贴上网址按「Scrape Again」，LinkedIn 用 Post Inspector（`linkedin.com/post-inspector`）。
+
+### 让 Google 找到网站
+
+`sitemap.xml` 是给搜索引擎的网页清单（目前只有这一页）。网站上线后做一次：
+
+1. 打开 Google Search Console（`search.google.com/search-console`），新增资源，选「网址前缀」，填 `https://sql-coffin.github.io/H-H-lab/`，按它的说明验证（例如把它给的 `<meta>` 标签加到 `index.html` 的 `<head>`）。
+2. 左边选「站点地图（Sitemaps）」，填 `sitemap.xml`，提交。
+
+**为什么没有 robots.txt**：搜索引擎只读网域最上层的 `https://sql-coffin.github.io/robots.txt`，放在 `/H-H-lab/` 文件夹里的会被忽略，所以这里不做。没有 robots.txt 时整个网站都可以被搜索，这正是我们要的；Google 靠上面提交的 `sitemap.xml` 找到网页。以后改用自己的网域（网站在网域最上层）时，才用得上 robots.txt。
+
+### 换网址（例如改用自己的网域）
+
+`index.html` 的 `<head>`（`canonical`、`og:url`、`og:image`、商家资料）和 `sitemap.xml` 里的 `https://sql-coffin.github.io/H-H-lab/` 都要改成新网址，再在仓库加 `SITE_URL` 变量（见下面「检查真实网站」）。没改齐的话，「Live site check」会失败提醒。
 
 ## 沉浸式体验架构
 
@@ -152,12 +196,13 @@ npm test
 | `tests/experience.test.mjs` | 爆炸图跟着滚动（开头文字、浅色背景、三个标签都在画面内）、快速来回切换两个 3D 区块时画布跑到正确的区块、改窗口大小和横竖屏后画布大小正确且模型在画面内、模型 / three.js / 程序下载失败或没有 WebGL 时显示静态图、下载慢时先显示 Loading |
 | `tests/loading.test.mjs` | 快滚到才载入（电脑和手机）：打开网站时只下载开场的 `bridge.glb`；3D 区块离画面还有三个半画面高时不载入、一个半画面高时就载入，滚到时已经显示 3D；模型下载失败或没有 WebGL 时，滚到 3D 区块显示静态图 |
 | `tests/idle.test.mjs` | 画面静止就停（电脑和手机）：三个 3D 区块动画到位后 2 秒内不画新的一帧、画面还在；停下后滚动、动鼠标、鼠标离开、按姿态按钮、拖动（电脑用鼠标、手机用手指）、改窗口大小 / 转手机方向都会马上继续画、画面跟着更新；按姿态按钮或拖动后要转到位才停；切换「减少动态效果」、换屏幕缩放比例、浏览器把 3D 画布收回又还回来（手机内存不够时会这样）也会马上重画，不会变空白 |
+| `tests/seo.test.mjs` | 分享预览有标题、说明、网址、网站名称和完整网址的分享图（JPG、1200×630、能下载）；canonical 和 og:url 是网站网址；`sitemap.xml` 列出这个网址；商家资料和页面上的联络资料一致，Logo 和图片能下载；分页图标是正方形，iPhone 图标是 180×180。和做分享预览的程序一样，用关掉 JavaScript 的浏览器读网页 |
 
 `tests/fixtures/geometry.html` 是只给测试用的页面。
 
 ### 检查真实网站
 
-`.github/workflows/live.yml`（Actions 里的「Live site check」）在这三种时候，用真实网址 `https://sql-coffin.github.io/H-H-lab/` 跑 `site`、`experience`、`viewer`、`intro` 四组测试：
+`.github/workflows/live.yml`（Actions 里的「Live site check」）在这三种时候，用真实网址 `https://sql-coffin.github.io/H-H-lab/` 跑 `site`、`experience`、`viewer`、`intro`、`seo` 五组测试：
 
 - 每次 GitHub Pages 部署完成后（用刚部署的那个版本的测试）
 - 每天马来西亚时间早上 9 点左右
@@ -165,4 +210,4 @@ npm test
 
 失败时等 2 分钟重试一次（刚部署时网站可能还在更新）；仍失败就开一个带 `live-check` 标签的 Issue，写上失败的测试和运行记录链接（已经有未关闭的就在里面留言）。之后检查通过时会自动留言并关闭它。
 
-在自己电脑上检查真实网站：`SITE_URL=https://sql-coffin.github.io/H-H-lab/ npm run test:live`。网站换了网址（例如自己的网域）时，在仓库 **Settings → Secrets and variables → Actions → Variables** 加一个 `SITE_URL`。
+在自己电脑上检查真实网站：`SITE_URL=https://sql-coffin.github.io/H-H-lab/ npm run test:live`。网站换了网址（例如自己的网域）时，在仓库 **Settings → Secrets and variables → Actions → Variables** 加一个 `SITE_URL`，并照上面「换网址」改好 `<head>` 和 `sitemap.xml`：`seo` 测试会检查 canonical 和 og:url 是不是等于 `SITE_URL`，没改就会失败。
