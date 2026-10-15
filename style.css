@@ -355,3 +355,7 @@ h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
   .intro3d[data-state="fallback"] .intro3d-band .logo { width: 240px; }
 }
 @media (prefers-reduced-motion: reduce) { .intro3d-hint::after { animation: none; } }
+
+/* Analytics (analytics.js): a 1px marker at the very end of the exploded view's scroll track.
+   Once it comes into view, the visitor has scrolled through the whole 3D (section_view case3d_end). */
+.track-end { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; pointer-events: none; }

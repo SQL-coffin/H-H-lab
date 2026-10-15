@@ -49,10 +49,19 @@ export function launch(args = WEBGL) {
   return chromium.launch({ args });
 }
 
+// Google Analytics (analytics.js) never really runs in the tests: its script comes back empty and
+// its collection addresses answer "nothing to say", so test runs, including the live check once
+// the site has an ID, send no visits to the lab's reports and do not depend on Google. (Answered,
+// not blocked: a blocked script would log an error, which the tests count as a page error.)
+const GA_SCRIPT = /(^|\.)googletagmanager\.com$/;
+const GA_COLLECT = /(^|\.)(google-analytics\.com|analytics\.google\.com)$/;
+
 // Opens a page and records page errors and console errors (GPU driver chatter is ignored), every
 // request it makes, the ones that finished, and the ones that failed or got an error status.
 export async function openPage(browser, url, options = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, ...options });
+  await context.route((u) => GA_SCRIPT.test(u.hostname), (r) => r.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
+  await context.route((u) => GA_COLLECT.test(u.hostname), (r) => r.fulfill({ status: 204 }));
   const page = await context.newPage();
   page.errors = [];
   page.requests = [];
