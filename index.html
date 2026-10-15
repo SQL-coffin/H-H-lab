@@ -63,6 +63,11 @@
   <link rel="modulepreload" href="experience/vendor/three.module.min.js">
   <link rel="modulepreload" href="experience/vendor/jsm/loaders/GLTFLoader.js">
   <script type="module" src="experience/main.js"></script>
+  <!-- Google Analytics 4: put the measurement ID (G-XXXXXXX) in content to turn it on; left empty,
+       no Google Analytics code is downloaded and no analytics data is sent. analytics.js lists
+       what it records; async, so it never waits for the 3D code. -->
+  <meta name="ga-id" content="">
+  <script type="module" src="analytics.js" async></script>
   <!-- Module scripts run (or fail) before DOMContentLoaded. A scene still without a data-state by
        then means the 3D code never ran (old browser, failed download), so show its still image. -->
   <script>
@@ -89,7 +94,7 @@
       <a href="#about">About</a>
       <a href="#contact">Contact</a>
     </nav>
-    <a class="btn btn-small" href="https://wa.me/601116874631" target="_blank" rel="noopener">WhatsApp</a>
+    <a class="btn btn-small" href="https://wa.me/601116874631" target="_blank" rel="noopener" data-track="header">WhatsApp</a>
   </div>
 </header>
 
@@ -111,7 +116,7 @@
   </section>
 
   <!-- Hero -->
-  <section class="hero">
+  <section class="hero" data-track-view="hero">
     <div class="hero-text">
       <p class="pill">Crown &amp; Bridge • Digital • Precision</p>
       <h1>Reduce Chairside Adjustments for Your <em>Crown &amp; Bridge Cases</em></h1>
@@ -129,8 +134,8 @@
   </section>
 
   <div class="wrap actions actions-center">
-    <a class="btn" href="https://wa.me/601116874631" target="_blank" rel="noopener">Talk to Our Lab Team</a>
-    <a class="btn btn-outline" href="https://www.instagram.com/h.h_dentalstudio" target="_blank" rel="noopener">View Case Gallery</a>
+    <a class="btn" href="https://wa.me/601116874631" target="_blank" rel="noopener" data-track="hero">Talk to Our Lab Team</a>
+    <a class="btn btn-outline" href="https://www.instagram.com/h.h_dentalstudio" target="_blank" rel="noopener" data-track="hero">View Case Gallery</a>
   </div>
 
   <!-- Highlights -->
@@ -213,6 +218,8 @@
         <p class="layer-label" data-anchor="model"><span>03</span><b class="label-long">3D-printed working model</b><b class="label-short">Working model</b></p>
       </div>
     </div>
+    <!-- Marks the end of the scroll track: in view = the visitor has scrolled through the whole 3D (analytics) -->
+    <div class="track-end" data-track-view="case3d_end" aria-hidden="true"></div>
   </section>
 
   <!-- Why clinics -->
@@ -241,14 +248,14 @@
         <p>Send us a scan, model or case photo.<br>We can advise the suitable material, estimated turnaround time and price before you proceed.</p>
       </div>
       <div class="cta-side">
-        <a class="btn" href="https://wa.me/601116874631" target="_blank" rel="noopener">Start Your First Case</a>
-        <a class="cta-phone" href="https://wa.me/601116874631" target="_blank" rel="noopener">+60 11-1687 4631</a>
+        <a class="btn" href="https://wa.me/601116874631" target="_blank" rel="noopener" data-track="first_case">Start Your First Case</a>
+        <a class="cta-phone" href="https://wa.me/601116874631" target="_blank" rel="noopener" data-track="first_case_phone">+60 11-1687 4631</a>
       </div>
     </div>
   </section>
 
   <!-- 3D viewer: pose buttons + drag to turn (scene: experience/scenes/case-viewer.js) -->
-  <section class="viewer3d" data-scene="case-viewer" aria-label="Interactive 3D view of an implant bridge case">
+  <section class="viewer3d" data-scene="case-viewer" aria-label="Interactive 3D view of an implant bridge case" data-track-view="viewer">
     <div class="viewer3d-stage" data-3d-stage data-3d-drag>
       <div class="viewer3d-canvas" data-3d-canvas></div>
       <p class="case3d-loading" data-3d-loading>Loading 3D case…</p>
@@ -283,7 +290,7 @@
         <figure><img src="images/before.webp" alt="Molar before restoration" width="504" height="283" loading="lazy"><figcaption>Before</figcaption></figure>
         <figure><img src="images/after.webp" alt="Molar after restoration" width="487" height="283" loading="lazy"><figcaption>After</figcaption></figure>
       </div>
-      <a class="btn btn-outline" href="https://www.instagram.com/h.h_dentalstudio" target="_blank" rel="noopener">View Our Case Gallery</a>
+      <a class="btn btn-outline" href="https://www.instagram.com/h.h_dentalstudio" target="_blank" rel="noopener" data-track="before_after">View Our Case Gallery</a>
     </div>
   </section>
 
@@ -312,7 +319,7 @@
         <img src="images/feedback-2.webp" alt="Clinic story: PFZ bridge, copy paste anatomy from denture, beautiful stain by @h.h_dentalstudio" width="450" height="800" loading="lazy">
         <img src="images/feedback-3.webp" alt="Dentist message: shade matching is perfect, patient can barely tell which is the crown" width="542" height="626" loading="lazy">
       </div>
-      <a class="btn" href="https://wa.me/601116874631" target="_blank" rel="noopener">Discuss Your Case</a>
+      <a class="btn" href="https://wa.me/601116874631" target="_blank" rel="noopener" data-track="feedback">Discuss Your Case</a>
     </div>
   </section>
 
@@ -321,17 +328,18 @@
 <footer id="contact" class="site-footer">
   <div class="wrap center">
     <img class="logo logo-footer" src="images/logo.webp" alt="H&amp;H Digital Dental Laboratory" width="767" height="658" loading="lazy">
-    <dl class="contact-list">
-      <div><dt>WhatsApp</dt><dd><a href="https://wa.me/601116874631" target="_blank" rel="noopener">+60 11-1687 4631</a></dd></div>
-      <div><dt>Email</dt><dd><a href="mailto:h.hddl@outlook.com">h.hddl@outlook.com</a></dd></div>
-      <div><dt>Instagram</dt><dd><a href="https://www.instagram.com/h.h_dentalstudio" target="_blank" rel="noopener">@h.h_dentalstudio</a></dd></div>
-      <div><dt>Address</dt><dd><a href="https://www.google.com/maps/search/?api=1&amp;query=30-02%20Jalan%20Jaya%20Putra%207%2F8%20Bandar%20Jaya%20Putra%2081100%20Johor%20Bahru" target="_blank" rel="noopener">NO.30-02, Jalan Jaya Putra 7/8, Bandar Jaya Putra,<br>81100 Johor Bahru, Johor Darul Ta'zim, Malaysia</a></dd></div>
+    <dl class="contact-list" data-track-view="contact">
+      <div><dt>WhatsApp</dt><dd><a href="https://wa.me/601116874631" target="_blank" rel="noopener" data-track="footer">+60 11-1687 4631</a></dd></div>
+      <div><dt>Email</dt><dd><a href="mailto:h.hddl@outlook.com" data-track="footer">h.hddl@outlook.com</a></dd></div>
+      <div><dt>Instagram</dt><dd><a href="https://www.instagram.com/h.h_dentalstudio" target="_blank" rel="noopener" data-track="footer">@h.h_dentalstudio</a></dd></div>
+      <div><dt>Address</dt><dd><a href="https://www.google.com/maps/search/?api=1&amp;query=30-02%20Jalan%20Jaya%20Putra%207%2F8%20Bandar%20Jaya%20Putra%2081100%20Johor%20Bahru" target="_blank" rel="noopener" data-track="footer">NO.30-02, Jalan Jaya Putra 7/8, Bandar Jaya Putra,<br>81100 Johor Bahru, Johor Darul Ta'zim, Malaysia</a></dd></div>
     </dl>
     <p class="copyright">Copyright © 2026 H&amp;H Digital Dental Laboratory Enterprise. All rights reserved.</p>
   </div>
+  <!-- Floating WhatsApp button, fixed to the bottom-right corner (style.css). It sits inside the
+       footer so that, like everything else, it belongs to a page landmark for screen readers. -->
+  <a class="wa-float" href="https://wa.me/601116874631" target="_blank" rel="noopener" aria-label="Chat on WhatsApp" data-track="float"><svg width="28" height="28"><use href="#i-whatsapp"/></svg></a>
 </footer>
-
-<a class="wa-float" href="https://wa.me/601116874631" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><svg width="28" height="28"><use href="#i-whatsapp"/></svg></a>
 
 </body>
 </html>

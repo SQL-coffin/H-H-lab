@@ -11,6 +11,7 @@ sitemap.xml     给 Google 的网页清单（见下面「分享预览与 Google 
 images/         照片（WebP 格式），还有分享图和图标（JPG / PNG，见「分享预览与 Google 搜索资料」）
 images/icons/   金色图标
 experience/     沉浸式体验程序（滚动 → 状态 → 3D / 文字），说明见下面「沉浸式体验架构」
+analytics.js    网站分析（Google Analytics）：记录联络点击、3D 视角、看到哪里，说明见下面「网站分析」
 assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 ```
 
@@ -29,7 +30,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 | 2. 建立任务 | GitHub Issues → New issue →「🐞 Bug」或「✨ 新需求 / 改版」 | 模板里有验收标准栏位；把 Issue 链接填回 Notion |
 | 3. BDD：描述正确行为 | Issue 的验收标准 | 每个「那么」都要能检查，会变成一条测试 |
 | 4. TDD：先写失败的测试 | `tests/*.test.mjs` | 测试名称写成那句「那么」；先跑一次，确认它在修改前会失败 |
-| 5. 修改 | `index.html` / `style.css` / `experience/` | 改到测试通过 |
+| 5. 修改 | `index.html` / `style.css` / `experience/` / `analytics.js` | 改到测试通过 |
 | 6. 运行自动化测试 | 本地 `npm test`；开 PR 后 GitHub Actions「Tests」自动跑 | 全部通过才合并 |
 | 7. 提交 | Pull request（模板里写 `Closes #编号`） | 合并后 Issue 自动关闭 |
 | 8. 部署 | GitHub Pages | 合并到 `main` 后自动上线 |
@@ -48,6 +49,63 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 | 分享图、图标 | 见下面「分享预览与 Google 搜索资料」 |
 | 换照片 | 用同一个文件名覆盖 `images/` 里的图片 |
 | 颜色 | `style.css` 最上面的 `--gold`、`--blue` |
+| Google Analytics 编号 | `index.html` 最上面的 `<meta name="ga-id" content="">`：把 `G-` 开头的编号贴在引号中间；留空就是不追踪。做法见下面「网站分析」 |
+| 新加联络按钮 | 照抄旧的按钮，把 `data-track="..."` 改成新的位置名（见「网站分析」） |
+
+## 网站分析（Google Analytics）
+
+网站用免费的 Google Analytics 4（GA4）记录：访客点了哪个联络按钮、在 3D 查看器看了哪个视角、滚到了哪里。程序在 `analytics.js`。
+
+**还没填编号时完全关闭**：不会下载任何 Google 的程序，也不会送出任何资料，网站其他功能都一样。
+
+### 开启（只需做一次）
+
+1. 用 Google 账号登录 <https://analytics.google.com>，按「开始衡量」（已经有 GA 账号的话：左下角「管理」⚙ →「创建」→「媒体资源」）。
+2. 媒体资源名称填 `H&H 网站`，时区选「马来西亚」，货币选「马来西亚林吉特」，下一步把商家资料填完。
+3. 平台选「网站」，网址填 `sql-coffin.github.io`，数据流名称随意（例如 `H&H 网站`），按「创建数据流」。
+4. 画面上会显示 **衡量 ID**（Measurement ID），`G-` 开头，例如 `G-AB12CD34EF`。按旁边的复制按钮。
+5. 打开 `index.html`，在最上面找到 `<meta name="ga-id" content="">`，把编号贴在引号中间，变成 `<meta name="ga-id" content="G-AB12CD34EF">`。照「开发流程」提交、合并到 `main`，上线后就开始记录。
+6. 检查：打开网站，点一下 WhatsApp 按钮，1 分钟内在 GA 的「报告」→「实时」会看到 `whatsapp_click`。
+
+编号不是密码，放在网页里是正常的。贴错（不是 `G-` 加大写英文字母和数字）时 GA 不会启动，自动测试（「Tests」和「Live site check」）也会失败提醒。
+
+### 记录哪些事件
+
+| 事件 | 什么时候记录 | 参数 |
+| --- | --- | --- |
+| `whatsapp_click` | 点任何一个 WhatsApp 链接（用鼠标中键在新标签页打开也算） | `link_location`：按钮的位置，见下表 |
+| `instagram_click` | 点 Instagram 链接 | `link_location` |
+| `email_click` | 点电邮地址 | `link_location` |
+| `map_click` | 点地址（打开 Google 地图） | `link_location` |
+| `viewer_pose` | 在「Take a closer look」按视角按钮，每按一次记一次（页面打开时默认的视角不算） | `pose`：`seated` 装在模型上、`layers` 三层分开、`intaglio` 牙桥内面（Fitting surface）、`closeup` 特写 |
+| `section_view` | 某个位置出现在画面上，并且停留至少半秒（看到一半就算；比画面高的，占满半个画面就算）；只是很快经过的不算，例如在最上面按选单的「Contact」，网页一路滑下去经过的 3D 和查看器。每次打开网页，每个位置只记一次 | `section`：`hero` 主视觉、`case3d_end` 看完 3D 爆炸图（滚到它的最后）、`viewer` 3D 查看器「Take a closer look」、`contact` 页尾联络资料 |
+
+`link_location` 的值（写在每个链接的 `data-track` 里）：
+
+| 值 | 位置 |
+| --- | --- |
+| `header` | 最上面固定栏的 WhatsApp 按钮 |
+| `hero` | 主视觉下面的「Talk to Our Lab Team」（WhatsApp）和「View Case Gallery」（Instagram） |
+| `first_case` | 「Ready to try one case first?」的「Start Your First Case」按钮 |
+| `first_case_phone` | 同一块里的电话号码 |
+| `before_after` | 「Before and After」下面的「View Our Case Gallery」（Instagram） |
+| `feedback` | 「Feedback From Clinics」下面的「Discuss Your Case」 |
+| `footer` | 页尾联络资料（WhatsApp、Email、Instagram、地址） |
+| `float` | 右下角浮动的 WhatsApp 圆形按钮 |
+
+GA 另外会自动记录浏览次数（`page_view`）、访客来自哪里等基本资料，不用设定。
+
+### 在 GA 里设定（只需做一次，最好和填编号同一天）
+
+- **把 WhatsApp 点击设为「关键事件」**（Key event，以前叫「转化」）：GA 左下角「管理」⚙ →「数据显示」→「关键事件」→「新建关键事件」→ 输入 `whatsapp_click` → 保存。之后报告里会单独统计有多少人点了 WhatsApp。（也可以等这个事件出现过一次后，在「管理」→「数据显示」→「事件」里把 `whatsapp_click` 那一行设为关键事件。）
+- **让参数出现在报告里**：「管理」→「数据显示」→「自定义定义」→「创建自定义维度」，范围选「事件」，事件参数分别填 `link_location`、`pose`、`section`（建三个，名称可以写「按钮位置」「3D 视角」「看到的位置」）。不建的话，这些参数只在「实时」报告里看得到；建好之后才开始累积。
+
+### 加新按钮或新区块时
+
+- 新的 WhatsApp / Instagram / Email / Google 地图链接会自动记录；记得加上 `data-track="位置名"`（英文小写，用 `_` 连接），报告里才分得出是哪一个，没写的会记成 `other`（自动测试也会提醒）。
+- 想知道访客有没有看到某个区块：在那个区块的标签加上 `data-track-view="名字"`，就会多一种 `section_view`。
+
+隐私：Google Analytics 会在访客的浏览器存 cookie（`_ga`）来分辨回访的人；不会记录访客的名字、电话或 WhatsApp 信息内容。
 
 ## 分享预览与 Google 搜索资料
 
@@ -197,12 +255,18 @@ npm test
 | `tests/loading.test.mjs` | 快滚到才载入（电脑和手机）：打开网站时只下载开场的 `bridge.glb`；3D 区块离画面还有三个半画面高时不载入、一个半画面高时就载入，滚到时已经显示 3D；模型下载失败或没有 WebGL 时，滚到 3D 区块显示静态图 |
 | `tests/idle.test.mjs` | 画面静止就停（电脑和手机）：三个 3D 区块动画到位后 2 秒内不画新的一帧、画面还在；停下后滚动、动鼠标、鼠标离开、按姿态按钮、拖动（电脑用鼠标、手机用手指）、改窗口大小 / 转手机方向都会马上继续画、画面跟着更新；按姿态按钮或拖动后要转到位才停；切换「减少动态效果」、换屏幕缩放比例、浏览器把 3D 画布收回又还回来（手机内存不够时会这样）也会马上重画，不会变空白 |
 | `tests/seo.test.mjs` | 分享预览有标题、说明、网址、网站名称和完整网址的分享图（JPG、1200×630、能下载）；canonical 和 og:url 是网站网址；`sitemap.xml` 列出这个网址；商家资料和页面上的联络资料一致，Logo 和图片能下载；分页图标是正方形，iPhone 图标是 180×180。和做分享预览的程序一样，用关掉 JavaScript 的浏览器读网页 |
+| `tests/analytics.test.mjs` | 网站分析：`ga-id` 是空的或正确的 `G-` 编号；没填编号（或填错）时不下载任何 Google 程序、网站和链接照常；填了编号时用这个编号载入 GA，事件都会送出；每个 WhatsApp / Instagram / Email / 地图链接点了记一次、带上位置、链接照常打开（鼠标中键在新标签页打开也算，右键不算）；视角按钮记录姿态（默认的不算）；电脑和手机往下滚、再滚回来，四个位置各只记一次；只是很快经过的位置不算（按选单跳到 Contact 时只记 `contact`） |
+| `tests/a11y.test.mjs` | 无障碍：整页（电脑和手机）载入完后用 axe（很多无障碍检查工具用的核心）检查，没有任何问题；WhatsApp 浮动按钮外观和位置不变（56×56，离右边和下面各 20px，滚动时固定不动、没被挡住） |
 
 `tests/fixtures/geometry.html` 是只给测试用的页面。
 
+测试不会真的连到 Google Analytics：Google Analytics 的网址都由测试自己回一个空的回应，所以就算填了编号，测试（包括下面的真实网站检查）也不会在报告里多出访问；点联络链接时，WhatsApp、Instagram、Google 地图也只会打开一个测试用的空白页。
+
+axe 报告问题时，测试会列出规则名称、说明和出问题的元素。例如之前的 `region`：每个内容都要在页面的区域（header、main、footer 等）里面，所以右下角的浮动 WhatsApp 按钮放在 `<footer>` 的最后；它在画面上的位置由 `style.css` 的 `.wa-float` 决定，不受影响。
+
 ### 检查真实网站
 
-`.github/workflows/live.yml`（Actions 里的「Live site check」）在这三种时候，用真实网址 `https://sql-coffin.github.io/H-H-lab/` 跑 `site`、`experience`、`viewer`、`intro`、`seo` 五组测试：
+`.github/workflows/live.yml`（Actions 里的「Live site check」）在这三种时候，用真实网址 `https://sql-coffin.github.io/H-H-lab/` 跑 `site`、`experience`、`viewer`、`intro`、`loading`、`idle`、`seo`、`analytics`、`a11y` 九组测试：
 
 - 每次 GitHub Pages 部署完成后（用刚部署的那个版本的测试）
 - 每天马来西亚时间早上 9 点左右
