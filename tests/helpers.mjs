@@ -73,6 +73,22 @@ export async function openPage(browser, url, options = {}) {
       return getContext.call(this, type, attrs);
     };
   });
+  // Counts the WebGL calls that put pixels on a canvas (clearing it or drawing into it), so tests
+  // can tell whether the page is still drawing frames (see drawCalls and waitForStill).
+  await page.addInitScript(() => {
+    window.__drawCalls = 0;
+    for (const GL of [window.WebGLRenderingContext, window.WebGL2RenderingContext]) {
+      if (!GL) continue;
+      for (const name of ['clear', 'drawArrays', 'drawElements', 'drawArraysInstanced', 'drawElementsInstanced', 'drawRangeElements']) {
+        const original = GL.prototype[name];
+        if (!original) continue;
+        GL.prototype[name] = function (...args) {
+          window.__drawCalls++;
+          return original.apply(this, args);
+        };
+      }
+    }
+  });
   if (options.route) await options.route(page);
   await page.goto(url);
   return page;
@@ -124,5 +140,33 @@ export async function canvasFingerprint(page, id) {
 }
 
 export const difference = (a, b) => a.reduce((sum, v, i) => sum + Math.abs(v - b[i]), 0) / a.length;
+
+// How many WebGL clear / draw calls the page has made since it opened. Two readings tell whether
+// frames were drawn in between.
+export const drawCalls = (page) => page.evaluate(() => window.__drawCalls);
+
+// Waits until the page has drawn nothing for `quiet` ms and at least 10 animation frames, i.e.
+// everything has settled and the frame loop has stopped. (Counting frames too means a page that is
+// merely busy, e.g. parsing a model, does not count as still.) Returns false if it was still
+// drawing after `timeout` ms.
+export async function waitForStill(page, { quiet = 1000, timeout = 20000 } = {}) {
+  return page.evaluate(async ([quiet, timeout]) => {
+    const start = performance.now();
+    let count = window.__drawCalls;
+    let since = start;
+    let frames = 0;
+    while (performance.now() - start < timeout) {
+      await new Promise((ok) => requestAnimationFrame(ok));
+      if (window.__drawCalls !== count) {
+        count = window.__drawCalls;
+        since = performance.now();
+        frames = 0;
+      } else if (++frames >= 10 && performance.now() - since >= quiet) {
+        return true;
+      }
+    }
+    return false;
+  }, [quiet, timeout]);
+}
 
 export const settle = (page, ms = 4000) => page.waitForTimeout(ms);

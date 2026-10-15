@@ -11,6 +11,8 @@
 // A scene is declared in index.html as <section data-scene="id"> with a [data-3d-stage] inside
 // (the sticky frame that reacts to the mouse) and a [data-3d-canvas] slot for the canvas.
 // Its lifecycle is shown on the section as data-state="loading" | "ready" | "fallback".
+// A scene is only built (and its models downloaded) once the visitor gets near it, so opening
+// the page downloads just what the first scene needs.
 import { createState } from './state.js';
 import { createInput } from './input.js';
 import { createEngine } from './engine/stage.js';
@@ -20,6 +22,21 @@ import caseViewer from './scenes/case-viewer.js';
 import logoIntro from './scenes/logo-intro.js';
 
 const SCENES = [logoIntro, explodedCase, caseViewer];
+
+// How near the visitor must be before a scene is built: its section within two window heights
+// above or below the window (IntersectionObserver rootMargin, in shares of the window).
+const NEAR = '200% 0px';
+
+// Calls run() once, as soon as the section comes within NEAR of the window (straight away if it
+// already is).
+function whenNear(el, run) {
+  const observer = new IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    observer.disconnect();
+    run();
+  }, { rootMargin: NEAR });
+  observer.observe(el);
+}
 
 const sections = [...document.querySelectorAll('[data-scene]')];
 
@@ -49,7 +66,9 @@ if (sections.length) {
       engine.wake();
     });
 
-    def.setup({ engine, el, state }).then((instance) => {
+    // Everything above happens straight away (the section must have a data-state before the page
+    // finishes loading, see index.html); building the scene waits until the visitor gets near.
+    whenNear(el, () => def.setup({ engine, el, state }).then((instance) => {
       const loading = el.querySelector('[data-3d-loading]');
       if (loading) loading.hidden = true;
       engine.add({ id: def.id, el, slot, instance, ui: bindScene(el) });
@@ -58,6 +77,6 @@ if (sections.length) {
     }).catch((err) => {
       console.error(`3D scene "${def.id}" failed to load`, err);
       fallback();
-    });
+    }));
   }
 }

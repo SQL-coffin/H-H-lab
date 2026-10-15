@@ -1,11 +1,13 @@
 // Experience layer: turns scroll, mouse and touch into experience state.
 // Scenes are tall sections; a scene's target progress is how far the page has scrolled through it
 // (0 when its top reaches the top of the window, 1 when its bottom reaches the bottom).
-import { addScene } from './state.js';
+import { addScene, REDUCED_MOTION } from './state.js';
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
-// onChange is called whenever something may need a new frame (scroll, resize, a scene coming into view).
+// onChange is called whenever something may need a new frame (scroll, resize, a scene coming into
+// view, the mouse, a drag, the reduce-motion setting). The frame loop stops while nothing moves,
+// so anything that changes what the scenes show must call it.
 export function createInput(state, onChange) {
   const tracked = [];
 
@@ -30,6 +32,8 @@ export function createInput(state, onChange) {
 
   window.addEventListener('scroll', measure, { passive: true });
   window.addEventListener('resize', measure);
+  // state.js follows the setting; the scenes need a frame to show it.
+  window.matchMedia(REDUCED_MOTION).addEventListener('change', onChange);
 
   return {
     measure,
@@ -52,11 +56,13 @@ export function createInput(state, onChange) {
         state.pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
         state.pointer.y = ((e.clientY - r.top) / r.height) * 2 - 1;
         state.pointer.over = id;
+        onChange();
       });
       stage.addEventListener('pointerleave', () => {
         state.pointer.x = 0;
         state.pointer.y = 0;
         state.pointer.over = null;
+        onChange();
       });
 
       // Scenes that can be turned by hand mark their stage with data-3d-drag. Dragging (mouse or
