@@ -155,8 +155,8 @@ export function createEngine(state) {
   }
 
   // Start drawing if a scene is visible; safe to call often. Everything that can change the
-  // picture calls it: input.js (scroll, resize, mouse, drag), the pose buttons, a scene being
-  // added, a restored WebGL context.
+  // picture calls it: input.js (scroll, resize, mouse, drag, the reduce-motion setting), the pose
+  // buttons, a scene being added, a restored WebGL context.
   function wake() {
     if (running || !active()) return;
     running = true;

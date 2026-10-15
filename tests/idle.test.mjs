@@ -1,7 +1,8 @@
 // The 3D stops drawing when nothing moves (issue #9): once the scroll, the mouse lean and the
 // scene's own motion have settled, no new frame is drawn and the canvas keeps its last picture.
 // Scrolling, the mouse, the pose buttons, dragging and resizing start it again at once, and a pose
-// change runs to the end before it stops.
+// change or a drag runs to the end before it stops. Whatever clears the canvas while it is stopped
+// (a new screen pixel ratio, a restored WebGL context) is drawn again at once.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -34,6 +35,33 @@ async function wakeBy(page, id, what, action) {
   const drew = await drawCalls(page) - calls;
   assert.ok(await waitForStill(page), `${what}: the 3D stops again afterwards`);
   return { drew, change: difference(picture, await canvasFingerprint(page, id)) };
+}
+
+// How much `picture` (taken when drawing stopped) differs from where the viewer was heading: with
+// reduced motion the viewer jumps straight there (into the pose, or to the full turn of a drag),
+// which gives the reference picture.
+async function differenceFromGoal(page, picture) {
+  const calls = await drawCalls(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.ok(await waitForStill(page), 'drawing stops again after the reference');
+  assert.ok(await drawCalls(page) - calls > 0, 'the reference was drawn');
+  return difference(picture, await canvasFingerprint(page, VIEWER));
+}
+
+// A horizontal finger drag across the viewer's stage, dx stage widths long (negative is to the
+// left), sent through the browser's real touch input as a phone would (Playwright's touchscreen
+// can only tap).
+async function swipe(page, dx) {
+  const stage = await page.locator(`[data-scene="${VIEWER}"] [data-3d-stage]`).boundingBox();
+  const x = stage.x + stage.width * 0.75;
+  const y = stage.y + stage.height * 0.45;
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  for (let i = 1; i <= 10; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + stage.width * dx * i / 10, y }] });
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await cdp.detach();
 }
 
 // The viewer's canvas fills its stage and its drawing buffer matches (as after any resize).
@@ -108,7 +136,7 @@ test('desktop: after the 3D has stopped, scrolling, the mouse, a pose button, dr
   await page.context().close();
 });
 
-test('phone: after the 3D has stopped, scrolling, tapping a pose button and turning the phone each start drawing again and the picture follows', async () => {
+test('phone: after the 3D has stopped, scrolling, tapping a pose button, turning the phone and dragging with a finger each start drawing again and the picture follows (after a drag, until the case has turned all the way)', async () => {
   const page = await open(PHONE);
 
   await goTo(page, 'exploded-case', 0.3);
@@ -130,6 +158,14 @@ test('phone: after the 3D has stopped, scrolling, tapping a pose button and turn
     assert.ok(await canvasFitsStage(page), `${turn}: the canvas fits the stage`);
     assert.ok(await litPixels(page, VIEWER) > 200, `${turn}: the case is drawn, not blank`);
   }
+
+  // Touch screens have no mouse lean, so once the finger lifts only the viewer itself keeps the
+  // frames coming while the case catches up with the drag.
+  r = await wakeBy(page, VIEWER, 'dragging', () => swipe(page, -0.45));
+  assert.ok(r.drew > 0, 'dragging: draws again');
+  assert.ok(r.change > 1, 'dragging: the case turns');
+  const stopped = await canvasFingerprint(page, VIEWER);
+  assert.ok(await differenceFromGoal(page, stopped) < 0.5, 'dragging: the case had turned all the way when drawing stopped');
   assert.deepEqual(page.errors, []);
   await page.context().close();
 });
@@ -157,11 +193,51 @@ test('after a pose button, the 3D keeps drawing until the case has reached the n
   assert.ok(await waitForStill(page), 'drawing stops after the pose change');
   const stopped = await canvasFingerprint(page, VIEWER);
   assert.ok(difference(seated, stopped) > 1, 'the case moved');
-  // Reference picture of the pose itself: with reduced motion the viewer jumps straight into it.
-  const calls = await drawCalls(page);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  assert.ok(await waitForStill(page), 'drawing stops again');
-  assert.ok(await drawCalls(page) - calls > 0, 'the reference was drawn');
-  assert.ok(difference(stopped, await canvasFingerprint(page, VIEWER)) < 0.5, 'the case had reached its pose when drawing stopped');
+  assert.ok(await differenceFromGoal(page, stopped) < 0.5, 'the case had reached its pose when drawing stopped');
+  await page.context().close();
+});
+
+// Resizing the canvas's drawing buffer, or losing the WebGL context, clears the picture although
+// nothing on the page moves, so the stopped 3D has to be drawn again straight away.
+test('while the 3D has stopped, a restored WebGL context or a new screen pixel ratio redraws it at once, so the stage keeps its picture and never goes blank', async () => {
+  const page = await open();
+  await goTo(page, VIEWER);
+  assert.ok(await waitForStill(page), 'the 3D has stopped');
+  const picture = await canvasFingerprint(page, VIEWER);
+
+  // The browser drops the WebGL context and later gives it back (phones do this under memory
+  // pressure); WEBGL_lose_context does the same on purpose.
+  const restored = await page.evaluate(async (s) => {
+    const canvas = document.querySelector(`[data-scene="${s}"] [data-3d-canvas] canvas`);
+    const lose = canvas.getContext('webgl2').getExtension('WEBGL_lose_context');
+    // Resolves true when the event comes, false if it has not come within 10 seconds.
+    const next = (name) => new Promise((done) => {
+      canvas.addEventListener(name, () => done(true), { once: true });
+      setTimeout(() => done(false), 10000);
+    });
+    const lost = next('webglcontextlost');
+    lose.loseContext();
+    if (!await lost) return false;
+    // The browser only allows restoring once it has finished handling the loss.
+    await new Promise((done) => setTimeout(done, 0));
+    const back = next('webglcontextrestored');
+    lose.restoreContext();
+    return back;
+  }, VIEWER);
+  assert.ok(restored, 'the WebGL context was lost and restored');
+  assert.ok(await waitForStill(page), 'restored context: drawing stops again');
+  assert.ok(await litPixels(page, VIEWER) > 200, 'restored context: the case is drawn, not blank');
+  assert.ok(difference(picture, await canvasFingerprint(page, VIEWER)) < 0.5, 'restored context: the same picture as before');
+
+  // Only the pixel ratio changes, as with browser zoom or moving the window to a screen with a
+  // different scale; the page keeps its size, so there is no resize event.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setDeviceMetricsOverride', { ...page.viewportSize(), deviceScaleFactor: 2, mobile: false });
+  await page.waitForFunction(() => devicePixelRatio === 2);
+  assert.ok(await waitForStill(page), 'new pixel ratio: drawing stops again');
+  assert.ok(await canvasFitsStage(page), 'new pixel ratio: the drawing buffer matches the new pixel ratio');
+  assert.ok(await litPixels(page, VIEWER) > 200, 'new pixel ratio: the case is drawn, not blank');
+  assert.ok(difference(picture, await canvasFingerprint(page, VIEWER)) < 0.5, 'new pixel ratio: the same picture, only sharper');
+  assert.deepEqual(page.errors, []);
   await page.context().close();
 });
