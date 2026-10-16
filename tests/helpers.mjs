@@ -105,8 +105,18 @@ export async function openPage(browser, url, options = {}) {
 
 export const sceneState = (page, id) => page.evaluate((s) => document.querySelector(`[data-scene="${s}"]`).dataset.state, id);
 
+// Waits until the scene's section has data-state `state`. 'fallback' is final (experience/main.js
+// never turns a fallen-back section into 'ready'), so waiting for anything else stops as soon as the
+// section falls back and fails at once, saying so. A broken model or script on the live site then
+// fails each test in seconds instead of after the full timeout, so the live check (.github/
+// workflows/live.yml) finishes in time to open its issue.
 export async function waitForState(page, id, state, timeout = 120000) {
-  await page.waitForFunction(([s, want]) => document.querySelector(`[data-scene="${s}"]`)?.dataset.state === want, [id, state], { timeout });
+  const reached = await page.waitForFunction(([s, want]) => {
+    const now = document.querySelector(`[data-scene="${s}"]`)?.dataset.state;
+    return now === want || now === 'fallback' ? now : false;
+  }, [id, state], { timeout });
+  const now = await reached.jsonValue();
+  if (now !== state) throw new Error(`3D section "${id}" is "${now}" (its 3D failed to load or is not supported), not "${state}"`);
 }
 
 // Scrolls (instantly, not with the site's smooth scrolling) so that `fraction` (0..1) of the

@@ -24,7 +24,9 @@ jobs:
     # After a failed deploy the previous site is still up, and GitHub already reports the failure.
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # Two runs of the tests with 2 minutes in between, with room to spare: if the job ran out of
+    # time, GitHub would cancel it and the issue below would never be opened.
+    timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
       # The deployed commit, so the tests match the site they check.
