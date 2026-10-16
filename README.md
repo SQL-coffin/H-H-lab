@@ -45,7 +45,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 | 文字 | `index.html`。改了首页大标题或网页说明（`<head>` 里的 `description`）时，也要一起改分享图 `images/og-image.jpg` 上的字、`<head>` 里的 `og:title`、`og:image:alt`（分享图的文字说明）和商家资料里的 `description`，测试不会发现这些地方没改 |
 | WhatsApp 号码 | `index.html` 里所有 `wa.me/601116874631`（号码前面不要 `+`、不要空格）、页面上写出来的 `+60 11-1687 4631`，还有 `<head>` 商家资料里的 `telephone`（写法和页面上一样） |
 | Instagram | `index.html` 里所有 `instagram.com/h.h_dentalstudio`（包括 `<head>` 商家资料里的 `sameAs`） |
-| Email、地址 | 页面最下面的联络资料，和 `<head>` 商家资料里的 `email`、`address` 一起改 |
+| Email、地址 | 页面最下面的联络资料，和 `<head>` 商家资料里的 `email`、`address` 一起改。地址还藏在页尾地址的 Google 地图链接里（`query=` 后面那段）：一起改，或在 Google 地图找到新地址后按「分享」复制链接贴上；测试不会发现这个链接没改 |
 | 分享图、图标 | 见下面「分享预览与 Google 搜索资料」 |
 | 换照片 | 用同一个文件名覆盖 `images/` 里的图片 |
 | 颜色 | `style.css` 最上面的 `--gold`、`--blue` |
@@ -64,7 +64,7 @@ assets/models/  3D 模型（GLB）和不支持 3D 时的静态图
 2. 媒体资源名称填 `H&H 网站`，时区选「马来西亚」，货币选「马来西亚林吉特」，下一步把商家资料填完。
 3. 平台选「网站」，网址填 `sql-coffin.github.io`，数据流名称随意（例如 `H&H 网站`），按「创建数据流」。
 4. 画面上会显示 **衡量 ID**（Measurement ID），`G-` 开头，例如 `G-AB12CD34EF`。按旁边的复制按钮。
-5. 打开 `index.html`，在最上面找到 `<meta name="ga-id" content="">`，把编号贴在引号中间，变成 `<meta name="ga-id" content="G-AB12CD34EF">`。照「开发流程」提交、合并到 `main`，上线后就开始记录。
+5. 打开 `index.html`，在最上面找到 `<meta name="ga-id" content="">`，把编号贴在引号中间，变成 `<meta name="ga-id" content="G-AB12CD34EF">`。照「开发流程」提交、合并到 `main`，上线后就开始记录。页尾版权下面也会自动出现一行小字，说明网站用了 Google Analytics 的 cookie（见下面「隐私」）。
 6. 检查：打开网站，点一下 WhatsApp 按钮，1 分钟内在 GA 的「报告」→「实时」会看到 `whatsapp_click`。
 
 编号不是密码，放在网页里是正常的。贴错（不是 `G-` 加大写英文字母和数字）时 GA 不会启动，自动测试（「Tests」和「Live site check」）也会失败提醒。
@@ -103,9 +103,13 @@ GA 另外会自动记录浏览次数（`page_view`）、访客来自哪里等基
 ### 加新按钮或新区块时
 
 - 新的 WhatsApp / Instagram / Email / Google 地图链接会自动记录；记得加上 `data-track="位置名"`（英文小写，用 `_` 连接），报告里才分得出是哪一个，没写的会记成 `other`（自动测试也会提醒）。
-- 想知道访客有没有看到某个区块：在那个区块的标签加上 `data-track-view="名字"`，就会多一种 `section_view`。
+- 想知道访客有没有看到某个区块：在那个区块的标签加上 `data-track-view="名字"`，就会多一种 `section_view`。同时要把这个名字加进 `tests/analytics.test.mjs` 里 section_view 测试的清单（搜索 `'case3d_end', 'hero'`，`case3d_end` 排第一，其他按页面上的先后顺序），并加到上面「记录哪些事件」表里 `section` 的说明，不然测试会失败。不要标在一打开网页就看得到的地方，否则测试也要跟着改。
 
-隐私：Google Analytics 会在访客的浏览器存 cookie（`_ga`）来分辨回访的人；不会记录访客的名字、电话或 WhatsApp 信息内容。
+### 隐私
+
+- Google Analytics 会在访客的浏览器存 cookie（`_ga` 和 `_ga_` 加编号）来分辨回访的人；不会记录访客的名字、电话或 WhatsApp 信息内容。
+- Google Analytics 的使用条款要求网站说明用了 GA 和它的 cookie，并附上 Google 的说明链接。所以填了编号后，页尾会自动显示一行英文小字：「This site uses Google Analytics cookies (_ga, _ga_*) to count visits and contact clicks. How Google uses this data」（链接到 Google 的说明）。没填编号时这行字不会出现。文字在 `index.html` 页尾的 `privacy-note`。
+- 马来西亚的个人资料保护法（PDPA）没有专门规定网站一定要有 cookie 同意横幅，所以目前没有做。如果以后主要向欧盟或英国的诊所推广，那些地方的法律要求访客先同意才能用这类 cookie，到时候要加同意横幅（GA 有「同意模式」可以配合）。这不是法律意见，有疑问请问专业人士。
 
 ## 分享预览与 Google 搜索资料
 
@@ -129,7 +133,9 @@ GA 另外会自动记录浏览次数（`page_view`）、访客来自哪里等基
 | `images/apple-touch-icon.png` | 180×180，PNG，黑色底、不透明 | iPhone「加入主画面」的图标 |
 | `images/icon-512.png` | 512×512，PNG | 商家资料里的 Logo |
 
-图标都是正方形，用 Logo 中间的金色 H|H 重画；32×32 那个是一格一格画的，缩小了也清楚。分享图里的字和 Logo 用的是网站一样的字体和金色。
+图标都是正方形，用 Logo 中间的金色 H|H 重画；32×32 那个是一格一格画的，缩小了也清楚。
+
+分享图要重做时（例如在 Canva），照现在的样子：黑色底（中间带一点暖色的光），离边 26 像素有一圈细金线；中间由上往下是 Logo（约 300 像素宽）、白色粗体 Inter（Bold，约 42 像素）两行「Reduce Chairside / Adjustments for Your」、金色 Playfair Display（Medium，约 50 像素）「Crown & Bridge Cases」、一条 100 像素宽的金线、浅灰色 Inter（Medium，约 21 像素）「In-house digital dental lab • Johor Bahru, Malaysia」（中间的点是金色）。金色是 `#e0ad5a`，浅灰是 `#c9c9c9`；两种字体都可以在 Google Fonts 免费下载。
 
 **Google 搜索结果旁边的小图标**：Google 每个网域只用一个图标，而且只从网域最上层的首页读取。现在的网址 `https://sql-coffin.github.io/H-H-lab/` 是 `sql-coffin.github.io` 下面的一个文件夹，所以搜索结果旁边不会显示 H&H 的图标（和下面的 robots.txt 是同一个原因）。以后改用自己的网域，`icon-192.png` 就会用上，不用重做（Google 要求的尺寸是 48 的倍数，192 符合）。
 
@@ -255,7 +261,7 @@ npm test
 | `tests/loading.test.mjs` | 快滚到才载入（电脑和手机）：打开网站时只下载开场的 `bridge.glb`；3D 区块离画面还有三个半画面高时不载入、一个半画面高时就载入，滚到时已经显示 3D；模型下载失败或没有 WebGL 时，滚到 3D 区块显示静态图 |
 | `tests/idle.test.mjs` | 画面静止就停（电脑和手机）：三个 3D 区块动画到位后 2 秒内不画新的一帧、画面还在；停下后滚动、动鼠标、鼠标离开、按姿态按钮、拖动（电脑用鼠标、手机用手指）、改窗口大小 / 转手机方向都会马上继续画、画面跟着更新；按姿态按钮或拖动后要转到位才停；切换「减少动态效果」、换屏幕缩放比例、浏览器把 3D 画布收回又还回来（手机内存不够时会这样）也会马上重画，不会变空白 |
 | `tests/seo.test.mjs` | 分享预览有标题、说明、网址、网站名称和完整网址的分享图（JPG、1200×630、能下载）；canonical 和 og:url 是网站网址；`sitemap.xml` 列出这个网址；商家资料和页面上的联络资料一致，Logo 和图片能下载；分页图标是正方形，iPhone 图标是 180×180。和做分享预览的程序一样，用关掉 JavaScript 的浏览器读网页 |
-| `tests/analytics.test.mjs` | 网站分析：`ga-id` 是空的或正确的 `G-` 编号；没填编号（或填错）时不下载任何 Google 程序、网站和链接照常；填了编号时用这个编号载入 GA，事件都会送出；每个 WhatsApp / Instagram / Email / 地图链接点了记一次、带上位置、链接照常打开（鼠标中键在新标签页打开也算，右键不算）；视角按钮记录姿态（默认的不算）；电脑和手机往下滚、再滚回来，四个位置各只记一次；只是很快经过的位置不算（按选单跳到 Contact 时只记 `contact`） |
+| `tests/analytics.test.mjs` | 网站分析：`ga-id` 是空的或正确的 `G-` 编号；没填编号（或填错）时不下载任何 Google 程序、网站和链接照常；填了编号时用这个编号载入 GA，事件都会送出；每个 WhatsApp / Instagram / Email / 地图链接点了记一次、带上位置、链接照常打开（鼠标中键在新标签页打开也算，右键不算）；视角按钮记录姿态（默认的不算）；填了编号时页尾显示 Google Analytics cookie 的说明和 Google 的链接，没填时不显示；电脑和手机往下滚、再滚回来，四个位置各只记一次；只是很快经过的位置不算（按选单跳到 Contact 时只记 `contact`） |
 | `tests/a11y.test.mjs` | 无障碍：整页（电脑和手机）载入完后用 axe（很多无障碍检查工具用的核心）检查，没有任何问题；WhatsApp 浮动按钮外观和位置不变（56×56，离右边和下面各 20px，滚动时固定不动、没被挡住） |
 
 `tests/fixtures/geometry.html` 是只给测试用的页面。
@@ -266,12 +272,12 @@ axe 报告问题时，测试会列出规则名称、说明和出问题的元素�
 
 ### 检查真实网站
 
-`.github/workflows/live.yml`（Actions 里的「Live site check」）在这三种时候，用真实网址 `https://sql-coffin.github.io/H-H-lab/` 跑 `site`、`experience`、`viewer`、`intro`、`loading`、`idle`、`seo`、`analytics`、`a11y` 九组测试：
+`.github/workflows/live.yml`（Actions 里的「Live site check」）在这三种时候，用真实网址 `https://sql-coffin.github.io/H-H-lab/` 跑 `site`、`experience`、`viewer`、`intro`、`loading`、`seo`、`analytics`、`a11y` 八组测试（`idle` 和 `geometry` 检查的是程序本身，每个 PR 都已经跑过，和网站放在哪里无关，所以不在这里跑）：
 
 - 每次 GitHub Pages 部署完成后（用刚部署的那个版本的测试）
 - 每天马来西亚时间早上 9 点左右
 - 手动：Actions →「Live site check」→「Run workflow」
 
-失败时等 2 分钟重试一次（刚部署时网站可能还在更新）；仍失败就开一个带 `live-check` 标签的 Issue，写上失败的测试和运行记录链接（已经有未关闭的就在里面留言）。之后检查通过时会自动留言并关闭它。
+失败时等 2 分钟重试一次（刚部署时网站可能还在更新；3D 载入失败的话，等它的测试会马上失败，不会一直等）；仍失败就开一个带 `live-check` 标签的 Issue，写上失败的测试和运行记录链接（已经有未关闭的就在里面留言）。之后检查通过时会自动留言并关闭它。
 
 在自己电脑上检查真实网站：`SITE_URL=https://sql-coffin.github.io/H-H-lab/ npm run test:live`。网站换了网址（例如自己的网域）时，在仓库 **Settings → Secrets and variables → Actions → Variables** 加一个 `SITE_URL`，并照上面「换网址」改好 `<head>` 和 `sitemap.xml`：`seo` 测试会检查 canonical 和 og:url 是不是等于 `SITE_URL`，没改就会失败。

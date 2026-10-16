@@ -16,6 +16,9 @@
 //                   name. Once per visit each. Parts that only fly past, as the header menu's smooth
 //                   jump to Contact passes the 3D, are not counted.
 //
+// With an ID it also shows the footer's note that the site uses Google Analytics cookies (Google's
+// terms ask for it).
+//
 // Nothing here stops a click or a link, and errors are caught, so analytics can never break the
 // page: with Google blocked (ad blockers) or unreachable, everything else works the same.
 
@@ -30,7 +33,8 @@ function gtag() {
 window.gtag = gtag;
 
 const id = (document.querySelector('meta[name="ga-id"]')?.getAttribute('content') || '').trim();
-if (ID_FORMAT.test(id)) {
+const on = ID_FORMAT.test(id);
+if (on) {
   const script = document.createElement('script');
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
@@ -131,7 +135,19 @@ function watchSections() {
   parts.forEach((el) => observer.observe(el));
 }
 
+// Google's terms ask sites that use Google Analytics to say so: the footer's note (hidden in
+// index.html) shows only while it is on.
+function showNotice() {
+  const note = document.querySelector('[data-analytics-notice]');
+  if (note) note.hidden = false;
+}
+
+function start() {
+  watchSections();
+  if (on) showNotice();
+}
+
 // The script loads with async (so a slow 3D download never delays it), which can be before the
 // rest of the page has been read.
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchSections);
-else watchSections();
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+else start();

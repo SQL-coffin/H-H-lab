@@ -35,7 +35,8 @@ const googleRequests = (page) => page.requests.filter((u) => {
 
 // The contact sites answer with a stand-in page, so a clicked link opens its tab without leaving
 // this machine (and without messaging the lab).
-const CONTACT_SITES = /^https:\/\/(wa\.me|(www\.)?instagram\.com|www\.google\.com\/maps)\//;
+// Same hosts as contactEvent() below (and analytics.js).
+const CONTACT_SITES = /^https:\/\/(wa\.me|([\w-]+\.)?whatsapp\.com|(www\.)?instagram\.com|(www\.)?google\.com\/maps|maps\.google\.com|maps\.app\.goo\.gl)\//;
 const standInContactSites = (page) => page.context().route((url) => CONTACT_SITES.test(url.href),
   (route) => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Stand-in</title>' }));
 
@@ -51,13 +52,16 @@ function serveWithGaId(page, id, meta) {
   });
 }
 
-// Which event a link should record, read from its address alone.
+// Which event a link should record, read from its address alone. The same rules as analytics.js
+// (change both together), so a link the owner pastes from WhatsApp or Google Maps' Share button
+// (api.whatsapp.com, maps.app.goo.gl) is checked too.
 function contactEvent(href) {
   const url = new URL(href);
+  const host = url.hostname;
   if (url.protocol === 'mailto:') return 'email_click';
-  if (url.hostname === 'wa.me') return 'whatsapp_click';
-  if (/(^|\.)instagram\.com$/.test(url.hostname)) return 'instagram_click';
-  if (/^(www\.)?google\.com$/.test(url.hostname) && url.pathname.startsWith('/maps')) return 'map_click';
+  if (/(^|\.)(wa\.me|whatsapp\.com)$/.test(host)) return 'whatsapp_click';
+  if (/(^|\.)instagram\.com$/.test(host)) return 'instagram_click';
+  if ((/^(www\.)?google\.com$/.test(host) && url.pathname.startsWith('/maps')) || /^maps\.(google\.com|app\.goo\.gl)$/.test(host)) return 'map_click';
   return null;
 }
 
@@ -196,6 +200,26 @@ test('with an ID in index.html, Google Analytics loads with that ID and gets eve
   assert.ok(queue.every((c) => c.isArguments), 'every command is in the form gtag.js reads');
   assert.deepEqual(page.errors, []);
 });
+
+// Google Analytics' terms ask every site that uses it to say so, with its cookies, and to link to
+// Google's explanation. The note in the footer only shows while Google Analytics is on.
+for (const [label, id, shown] of [['without an ID', '', false], ['with an ID', TEST_ID, true]]) {
+  test(`${label}, the footer ${shown ? 'shows' : 'does not show'} the note that the site uses Google Analytics cookies`, async (t) => {
+    const meta = {};
+    const page = await open(t, { route: (p) => serveWithGaId(p, id, meta) });
+    assert.ok(meta.found, 'index.html has a <meta name="ga-id"> for the ID');
+    const note = page.locator('footer [data-analytics-notice]');
+    assert.equal(await note.count(), 1, 'the footer has the note');
+    await nextFrames(page);
+    assert.equal(await note.isVisible(), shown, shown ? 'the note shows' : 'the note is hidden');
+    if (shown) {
+      assert.match(await note.innerText(), /Google Analytics/);
+      assert.match(await note.innerText(), /cookies/);
+      assert.equal(await note.locator('a').getAttribute('href'), 'https://policies.google.com/technologies/partner-sites', 'it links to how Google uses the data');
+    }
+    assert.deepEqual(page.errors, []);
+  });
+}
 
 test('clicking any WhatsApp, Instagram, email or map link records one event with where the link is, and the link still opens', async (t) => {
   const page = await open(t, { route: standInContactSites });

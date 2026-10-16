@@ -68,8 +68,9 @@
        what it records; async, so it never waits for the 3D code. -->
   <meta name="ga-id" content="">
   <script type="module" src="analytics.js" async></script>
-  <!-- Module scripts run (or fail) before DOMContentLoaded. A scene still without a data-state by
-       then means the 3D code never ran (old browser, failed download), so show its still image. -->
+  <!-- experience/main.js is a deferred module, so it runs (or fails) before DOMContentLoaded (unlike
+       the async analytics.js above, which plays no part in this). A scene still without a data-state
+       by then means the 3D code never ran (old browser, failed download), so show its still image. -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('[data-scene]').forEach(function (s) { if (!s.dataset.state) s.dataset.state = 'fallback'; });
@@ -335,6 +336,9 @@
       <div><dt>Address</dt><dd><a href="https://www.google.com/maps/search/?api=1&amp;query=30-02%20Jalan%20Jaya%20Putra%207%2F8%20Bandar%20Jaya%20Putra%2081100%20Johor%20Bahru" target="_blank" rel="noopener" data-track="footer">NO.30-02, Jalan Jaya Putra 7/8, Bandar Jaya Putra,<br>81100 Johor Bahru, Johor Darul Ta'zim, Malaysia</a></dd></div>
     </dl>
     <p class="copyright">Copyright © 2026 H&amp;H Digital Dental Laboratory Enterprise. All rights reserved.</p>
+    <!-- Shown by analytics.js only while Google Analytics is on (index.html has a ga-id): Google's
+         terms ask sites that use it to say so and to link to how Google uses the data. -->
+    <p class="privacy-note" data-analytics-notice hidden>This site uses Google Analytics cookies (_ga, _ga_*) to count visits and contact clicks. <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses this data</a></p>
   </div>
   <!-- Floating WhatsApp button, fixed to the bottom-right corner (style.css). It sits inside the
        footer so that, like everything else, it belongs to a page landmark for screen readers. -->
